@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  bots      Bot[]
+}
+
+model Bot {
+  id                 String        @id @default(uuid())
+  name               String
+  description        String?
+  userId             String
+  user               User          @relation(fields: [userId], references: [id])
+  facebookPageId     String?
+  facebookToken      String?
+  webhookVerifyToken String        @default(uuid())
+  isActive           Boolean       @default(false)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  flows              Flow[]
+  messages           Message[]
+  analytics          Analytics[]
+  sessions           UserSession[]
+}
+
+model Flow {
+  id        String   @id @default(uuid())
+  name      String
+  botId     String
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  nodes     String   @default("[]") @db.NVarChar(Max)
+  edges     String   @default("[]") @db.NVarChar(Max)
+  isDefault Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserSession {
+  id            String   @id @default(uuid())
+  botId         String
+  bot           Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  senderId      String
+  currentNodeId String?
+  context       String   @default("{}") @db.NVarChar(Max)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([botId, senderId])
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  botId       String
+  bot         Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  senderId    String
+  content     String
+  direction   String
+  messageType String
+  createdAt   DateTime @default(now())
+}
+
+model Analytics {
+  id               String   @id @default(uuid())
+  botId            String
+  bot              Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  date             DateTime @db.Date
+  totalMessages    Int      @default(0)
+  incomingMessages Int      @default(0)
+  outgoingMessages Int      @default(0)
+  uniqueUsers      Int      @default(0)
+
+  @@unique([botId, date])
+}
