@@ -13,6 +13,7 @@ const mockFlow: Flow = {
   botId: 'mock-bot',
   nodes: '[]',
   edges: '[]',
+  triggers: '[]',
   isDefault: true,
   isActive: true,
   createdAt: new Date().toISOString(),
@@ -52,6 +53,14 @@ const mockEdges: Edge[] = [
   { id: 'e2', source: 'text-1', target: 'quickReply-1' },
 ];
 
+// History state for undo/redo
+interface HistoryState {
+  nodes: Node<NodeData>[];
+  edges: Edge[];
+}
+
+const MAX_HISTORY_SIZE = 50;
+
 interface FlowState {
   flows: Flow[];
   currentFlow: Flow | null;
@@ -61,11 +70,20 @@ interface FlowState {
   isSaving: boolean;
   hasUnsavedChanges: boolean;
 
+  // Undo/Redo state
+  history: HistoryState[];
+  historyIndex: number;
+  canUndo: boolean;
+  canRedo: boolean;
+
   loadFlows: (botId: string) => Promise<void>;
   loadFlow: (botId: string, flowId: string) => Promise<void>;
   createFlow: (botId: string, name: string) => Promise<Flow>;
   saveFlow: (botId: string) => Promise<void>;
   deleteFlow: (botId: string, flowId: string) => Promise<void>;
+  setDefaultFlow: (botId: string, flowId: string) => Promise<void>;
+  duplicateFlow: (botId: string, flowId: string) => Promise<Flow>;
+  updateTriggers: (botId: string, flowId: string, triggers: string[]) => Promise<void>;
 
   // React Flow handlers
   onNodesChange: (changes: NodeChange<Node<NodeData>>[]) => void;
@@ -76,6 +94,11 @@ interface FlowState {
   deleteNode: (nodeId: string) => void;
   setNodes: (nodes: Node<NodeData>[]) => void;
   setEdges: (edges: Edge[]) => void;
+
+  // Undo/Redo actions
+  undo: () => void;
+  redo: () => void;
+  pushHistory: () => void;
 }
 
 export const useFlowStore = create<FlowState>((set, get) => ({
@@ -86,6 +109,12 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   isLoading: false,
   isSaving: false,
   hasUnsavedChanges: false,
+
+  // Undo/Redo state
+  history: [],
+  historyIndex: -1,
+  canUndo: false,
+  canRedo: false,
 
   loadFlows: async (botId: string) => {
     set({ isLoading: true });
@@ -108,6 +137,10 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         edges: mockEdges,
         isLoading: false,
         hasUnsavedChanges: false,
+        history: [{ nodes: mockNodes, edges: mockEdges }],
+        historyIndex: 0,
+        canUndo: false,
+        canRedo: false,
       });
       return;
     }
@@ -124,6 +157,10 @@ export const useFlowStore = create<FlowState>((set, get) => ({
           nodes,
           edges,
           hasUnsavedChanges: false,
+          history: [{ nodes, edges }],
+          historyIndex: 0,
+          canUndo: false,
+          canRedo: false,
         });
       }
     } finally {
@@ -180,6 +217,44 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     });
   },
 
+  setDefaultFlow: async (botId: string, flowId: string) => {
+    const response = await flowsApi.setDefault(botId, flowId);
+    if (response.success) {
+      // Update flows to reflect new default
+      set({
+        flows: get().flows.map((f) => ({
+          ...f,
+          isDefault: f.id === flowId,
+        })),
+      });
+    }
+  },
+
+  duplicateFlow: async (botId: string, flowId: string) => {
+    const response = await flowsApi.duplicate(botId, flowId);
+    if (response.success && response.data) {
+      set({ flows: [...get().flows, response.data] });
+      return response.data;
+    }
+    throw new Error('Failed to duplicate flow');
+  },
+
+  updateTriggers: async (botId: string, flowId: string, triggers: string[]) => {
+    const response = await flowsApi.update(botId, flowId, { triggers });
+    if (response.success && response.data) {
+      // Update flows list
+      set({
+        flows: get().flows.map((f) =>
+          f.id === flowId ? { ...f, triggers: JSON.stringify(triggers) } : f
+        ),
+        // Update current flow if it's the one being edited
+        currentFlow: get().currentFlow?.id === flowId
+          ? { ...get().currentFlow!, triggers: JSON.stringify(triggers) }
+          : get().currentFlow,
+      });
+    }
+  },
+
   onNodesChange: (changes) => {
     set({
       nodes: applyNodeChanges(changes, get().nodes),
@@ -227,4 +302,64 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   setNodes: (nodes) => set({ nodes, hasUnsavedChanges: true }),
   setEdges: (edges) => set({ edges, hasUnsavedChanges: true }),
+
+  // Undo/Redo implementations
+  pushHistory: () => {
+    const { nodes, edges, history, historyIndex } = get();
+
+    // Remove any future history if we're not at the end
+    const newHistory = history.slice(0, historyIndex + 1);
+
+    // Add current state to history
+    newHistory.push({
+      nodes: JSON.parse(JSON.stringify(nodes)),
+      edges: JSON.parse(JSON.stringify(edges))
+    });
+
+    // Limit history size
+    if (newHistory.length > MAX_HISTORY_SIZE) {
+      newHistory.shift();
+    }
+
+    set({
+      history: newHistory,
+      historyIndex: newHistory.length - 1,
+      canUndo: newHistory.length > 1,
+      canRedo: false,
+    });
+  },
+
+  undo: () => {
+    const { history, historyIndex } = get();
+    if (historyIndex <= 0) return;
+
+    const newIndex = historyIndex - 1;
+    const previousState = history[newIndex];
+
+    set({
+      nodes: JSON.parse(JSON.stringify(previousState.nodes)),
+      edges: JSON.parse(JSON.stringify(previousState.edges)),
+      historyIndex: newIndex,
+      canUndo: newIndex > 0,
+      canRedo: true,
+      hasUnsavedChanges: true,
+    });
+  },
+
+  redo: () => {
+    const { history, historyIndex } = get();
+    if (historyIndex >= history.length - 1) return;
+
+    const newIndex = historyIndex + 1;
+    const nextState = history[newIndex];
+
+    set({
+      nodes: JSON.parse(JSON.stringify(nextState.nodes)),
+      edges: JSON.parse(JSON.stringify(nextState.edges)),
+      historyIndex: newIndex,
+      canUndo: true,
+      canRedo: newIndex < history.length - 1,
+      hasUnsavedChanges: true,
+    });
+  },
 }));

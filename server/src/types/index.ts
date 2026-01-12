@@ -3,6 +3,7 @@ export type NodeType =
   | 'start'
   | 'text'
   | 'image'
+  | 'card'
   | 'quickReply'
   | 'userInput'
   | 'condition'
@@ -20,6 +21,21 @@ export interface TextNodeData extends BaseNodeData {
 export interface ImageNodeData extends BaseNodeData {
   imageUrl: string;
   caption?: string;
+}
+
+export interface CardButton {
+  id: string;
+  title: string;
+  type: 'postback' | 'url';
+  payload?: string;
+  url?: string;
+}
+
+export interface CardNodeData extends BaseNodeData {
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  buttons: CardButton[];
 }
 
 export interface QuickReplyButton {
@@ -46,13 +62,14 @@ export interface ConditionNodeData extends BaseNodeData {
 
 export interface DelayNodeData extends BaseNodeData {
   seconds: number;
+  showTyping?: boolean;
 }
 
 export interface FlowNode {
   id: string;
   type: NodeType;
   position: { x: number; y: number };
-  data: BaseNodeData | TextNodeData | ImageNodeData | QuickReplyNodeData | UserInputNodeData | ConditionNodeData | DelayNodeData;
+  data: BaseNodeData | TextNodeData | ImageNodeData | CardNodeData | QuickReplyNodeData | UserInputNodeData | ConditionNodeData | DelayNodeData;
 }
 
 export interface FlowEdge {

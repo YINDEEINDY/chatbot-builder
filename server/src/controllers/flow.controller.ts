@@ -99,6 +99,23 @@ export class FlowController {
       next(error);
     }
   }
+
+  async duplicateFlow(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const flow = await flowService.duplicateFlow(
+        req.params.flowId,
+        req.params.botId,
+        req.userId!
+      );
+
+      res.status(201).json({
+        success: true,
+        data: flow,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const flowController = new FlowController();

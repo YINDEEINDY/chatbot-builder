@@ -20,7 +20,7 @@ export const flowsApi = {
   update: async (
     botId: string,
     flowId: string,
-    data: { name?: string; nodes?: FlowNode[]; edges?: FlowEdge[]; isActive?: boolean }
+    data: { name?: string; nodes?: FlowNode[]; edges?: FlowEdge[]; triggers?: string[]; isActive?: boolean }
   ) => {
     const response = await apiClient.put<ApiResponse<Flow>>(`/bots/${botId}/flows/${flowId}`, data);
     return response.data;
@@ -36,6 +36,13 @@ export const flowsApi = {
   setDefault: async (botId: string, flowId: string) => {
     const response = await apiClient.post<ApiResponse<Flow>>(
       `/bots/${botId}/flows/${flowId}/set-default`
+    );
+    return response.data;
+  },
+
+  duplicate: async (botId: string, flowId: string) => {
+    const response = await apiClient.post<ApiResponse<Flow>>(
+      `/bots/${botId}/flows/${flowId}/duplicate`
     );
     return response.data;
   },

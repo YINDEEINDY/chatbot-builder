@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/db.js';
 import { flowExecutorService } from '../services/flow-executor.service.js';
+import { conversationService } from '../services/conversation.service.js';
+import { io } from '../index.js';
 
 interface MessagingEvent {
   sender: { id: string };
@@ -114,12 +116,50 @@ export class WebhookController {
     }
 
     if (messageText) {
-      console.log(`Received message from ${senderId}: ${messageText}`);
+      console.log(`[Webhook] Received message from ${senderId}: ${messageText}`);
 
-      try {
-        await flowExecutorService.executeFlow(bot, senderId, messageText);
-      } catch (error) {
-        console.error('Error executing flow:', error);
+      // Notify conversation service about new message and get conversation info
+      const conversationInfo = await conversationService.onNewMessage(botId, senderId, messageText);
+
+      // Emit socket event for new message
+      io.to(`bot:${botId}`).emit('message:new', {
+        botId,
+        senderId,
+        content: messageText,
+        direction: 'incoming',
+        conversationId: conversationInfo?.conversationId,
+        contactId: conversationInfo?.contactId,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Emit to specific conversation room if exists
+      if (conversationInfo?.conversationId) {
+        io.to(`conversation:${conversationInfo.conversationId}`).emit('message:new', {
+          botId,
+          senderId,
+          content: messageText,
+          direction: 'incoming',
+          conversationId: conversationInfo.conversationId,
+          contactId: conversationInfo.contactId,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      // Check if conversation is in human takeover mode
+      const isHumanTakeover = await conversationService.isHumanTakeover(botId, senderId);
+
+      if (isHumanTakeover) {
+        console.log(`[Webhook] Conversation is in human takeover mode, skipping bot response`);
+        return;
+      }
+
+      // Execute bot flow
+      const result = await flowExecutorService.executeFlow(bot, senderId, messageText);
+
+      if (!result.success) {
+        console.error(`[Webhook] Flow execution failed for bot ${botId}:`, result.error);
+      } else {
+        console.log(`[Webhook] Flow executed successfully for bot ${botId}`);
       }
     }
   }

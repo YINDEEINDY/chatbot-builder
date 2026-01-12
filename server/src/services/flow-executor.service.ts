@@ -1,6 +1,7 @@
 import { Bot, Flow, UserSession } from '@prisma/client';
 import { prisma } from '../config/db.js';
 import { messengerService } from './messenger.service.js';
+import { contactService } from './contact.service.js';
 import { FlowNode, FlowEdge, NodeType } from '../types/index.js';
 
 interface ExecutionContext {
@@ -8,68 +9,129 @@ interface ExecutionContext {
 }
 
 export class FlowExecutorService {
-  async executeFlow(bot: Bot, senderId: string, message: string): Promise<void> {
-    // 1. Get or create user session
-    let session = await this.getOrCreateSession(bot.id, senderId);
+  async executeFlow(bot: Bot, senderId: string, message: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      // 1. Get or create user session
+      let session = await this.getOrCreateSession(bot.id, senderId);
 
-    // 2. Get the default flow
-    const flow = await this.getDefaultFlow(bot.id);
-    if (!flow) {
-      console.log('No default flow found for bot:', bot.id);
-      return;
-    }
+      // 1.5. Create or update contact record
+      await contactService.upsertContact(bot.id, senderId);
 
-    // Parse nodes and edges
-    const nodes: FlowNode[] = JSON.parse(flow.nodes as string);
-    const edges: FlowEdge[] = JSON.parse(flow.edges as string);
+      // 2. Find flow - check for triggered flow first, then use default or continue session
+      let flow: Flow | null = null;
+      let shouldResetSession = false;
 
-    // 3. Determine current node
-    let currentNode: FlowNode | null = session.currentNodeId
-      ? this.findNode(nodes, session.currentNodeId)
-      : this.findStartNode(nodes);
-
-    if (!currentNode) {
-      console.log('No start node found');
-      return;
-    }
-
-    // Get context from session
-    const context: ExecutionContext = (session.context as ExecutionContext) || {};
-
-    // 4. Process incoming message (if waiting for input)
-    if (currentNode.type === 'userInput') {
-      const variableName = (currentNode.data as { variableName?: string }).variableName;
-      if (variableName) {
-        context[variableName] = message;
+      // Check if message matches any trigger keywords (only if not in the middle of a conversation)
+      if (!session.currentNodeId) {
+        flow = await this.findFlowByTrigger(bot.id, message);
+        if (flow) {
+          console.log(`[FlowExecutor] Triggered flow "${flow.name}" for keyword: ${message}`);
+          shouldResetSession = true;
+        }
       }
-      currentNode = this.getNextNode(nodes, edges, currentNode.id);
-    }
 
-    // 5. Execute nodes until we need user input or reach end
-    while (currentNode && currentNode.type !== 'userInput' && currentNode.type !== 'end') {
-      await this.executeNode(currentNode, bot, senderId, context);
+      // If no triggered flow, use the default flow
+      if (!flow) {
+        flow = await this.getDefaultFlow(bot.id);
+      }
 
-      // Get next node (handle conditions)
-      if (currentNode.type === 'condition') {
-        currentNode = this.getNextNodeForCondition(nodes, edges, currentNode, context);
-      } else {
+      if (!flow) {
+        console.error(`[FlowExecutor] No flow found for bot: ${bot.id}`);
+        await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured yet.');
+        return { success: false, error: 'No flow found' };
+      }
+
+      // Reset session if we're starting a new triggered flow
+      if (shouldResetSession) {
+        session = await this.resetSession(session.id);
+      }
+
+      // Parse nodes and edges with error handling
+      let nodes: FlowNode[];
+      let edges: FlowEdge[];
+      try {
+        nodes = JSON.parse(flow.nodes as string);
+        edges = JSON.parse(flow.edges as string);
+      } catch (parseError) {
+        console.error(`[FlowExecutor] Failed to parse flow data:`, parseError);
+        await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your message.');
+        return { success: false, error: 'Invalid flow data' };
+      }
+
+      // 3. Determine current node
+      let currentNode: FlowNode | null = session.currentNodeId
+        ? this.findNode(nodes, session.currentNodeId)
+        : this.findStartNode(nodes);
+
+      if (!currentNode) {
+        console.error(`[FlowExecutor] No start node found for bot: ${bot.id}`);
+        await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured correctly.');
+        return { success: false, error: 'No start node found' };
+      }
+
+      // Get context from session
+      const context: ExecutionContext = (session.context as ExecutionContext) || {};
+
+      // 4. Process incoming message (if waiting for input)
+      if (currentNode.type === 'userInput') {
+        const variableName = (currentNode.data as { variableName?: string }).variableName;
+        if (variableName) {
+          context[variableName] = message;
+        }
         currentNode = this.getNextNode(nodes, edges, currentNode.id);
       }
-    }
 
-    // 6. If we're at a userInput node, send the prompt
-    if (currentNode?.type === 'userInput') {
-      const prompt = (currentNode.data as { prompt?: string }).prompt;
-      if (prompt) {
-        await messengerService.sendText(bot, senderId, this.interpolate(prompt, context));
+      // 5. Execute nodes until we need user input or reach end
+      let nodeCount = 0;
+      const maxNodes = 100; // Prevent infinite loops
+
+      while (currentNode && currentNode.type !== 'userInput' && currentNode.type !== 'end') {
+        nodeCount++;
+        if (nodeCount > maxNodes) {
+          console.error(`[FlowExecutor] Max node execution limit reached for bot: ${bot.id}`);
+          await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your request.');
+          return { success: false, error: 'Max node limit reached' };
+        }
+
+        try {
+          await this.executeNode(currentNode, bot, senderId, context);
+        } catch (nodeError) {
+          console.error(`[FlowExecutor] Error executing node ${currentNode.id}:`, nodeError);
+          // Continue to next node instead of crashing
+        }
+
+        // Get next node (handle conditions)
+        if (currentNode.type === 'condition') {
+          currentNode = this.getNextNodeForCondition(nodes, edges, currentNode, context);
+        } else {
+          currentNode = this.getNextNode(nodes, edges, currentNode.id);
+        }
       }
+
+      // 6. If we're at a userInput node, send the prompt
+      if (currentNode?.type === 'userInput') {
+        const prompt = (currentNode.data as { prompt?: string }).prompt;
+        if (prompt) {
+          await messengerService.sendText(bot, senderId, this.interpolate(prompt, context));
+        }
+      }
+
+      // 7. Update session
+      await this.updateSession(session.id, currentNode?.id || null, context);
+
+      // 8. Log message and update analytics
+      await this.logMessage(bot.id, senderId, message, 'incoming');
+
+      return { success: true };
+    } catch (error) {
+      console.error(`[FlowExecutor] Unexpected error:`, error);
+      try {
+        await messengerService.sendText(bot, senderId, 'Sorry, something went wrong. Please try again later.');
+      } catch {
+        // Ignore error sending error message
+      }
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
-
-    // 7. Update session
-    await this.updateSession(session.id, currentNode?.id || null, context);
-
-    // 8. Log message
-    await this.logMessage(bot.id, senderId, message, 'incoming');
   }
 
   private async executeNode(
@@ -99,6 +161,25 @@ export class FlowExecutorService {
         break;
       }
 
+      case 'card': {
+        const cardData = node.data as {
+          title?: string;
+          subtitle?: string;
+          imageUrl?: string;
+          buttons?: Array<{ title: string; type: 'postback' | 'url'; payload?: string; url?: string }>;
+        };
+        if (cardData.title) {
+          await messengerService.sendCard(bot, senderId, {
+            title: this.interpolate(cardData.title, context),
+            subtitle: cardData.subtitle ? this.interpolate(cardData.subtitle, context) : undefined,
+            imageUrl: cardData.imageUrl,
+            buttons: cardData.buttons || [],
+          });
+          await this.logMessage(bot.id, senderId, `[Card: ${cardData.title}]`, 'outgoing');
+        }
+        break;
+      }
+
       case 'quickReply': {
         const data = node.data as { message?: string; buttons?: Array<{ title: string; payload: string }> };
         if (data.message && data.buttons) {
@@ -112,8 +193,18 @@ export class FlowExecutorService {
       }
 
       case 'delay': {
-        const seconds = (node.data as { seconds?: number }).seconds || 0;
-        await this.sleep(seconds * 1000);
+        const delayData = node.data as { seconds?: number; showTyping?: boolean };
+        const seconds = delayData.seconds || 0;
+        const showTyping = delayData.showTyping !== false; // Default to true
+
+        if (showTyping && seconds > 0) {
+          // Show typing indicator during delay
+          await messengerService.sendTypingIndicator(bot, senderId, true);
+          await this.sleep(seconds * 1000);
+          await messengerService.sendTypingIndicator(bot, senderId, false);
+        } else {
+          await this.sleep(seconds * 1000);
+        }
         break;
       }
 
@@ -222,12 +313,69 @@ export class FlowExecutorService {
     });
   }
 
+  private async findFlowByTrigger(botId: string, message: string): Promise<Flow | null> {
+    // Get all active flows for this bot
+    const flows = await prisma.flow.findMany({
+      where: { botId, isActive: true },
+    });
+
+    const normalizedMessage = message.toLowerCase().trim();
+
+    // Check each flow's triggers
+    for (const flow of flows) {
+      try {
+        const triggers: string[] = JSON.parse(flow.triggers as string);
+        if (triggers && triggers.length > 0) {
+          for (const trigger of triggers) {
+            const normalizedTrigger = trigger.toLowerCase().trim();
+            // Check for exact match or if message contains the trigger keyword
+            if (normalizedMessage === normalizedTrigger || normalizedMessage.includes(normalizedTrigger)) {
+              return flow;
+            }
+          }
+        }
+      } catch {
+        // Invalid JSON, skip this flow's triggers
+      }
+    }
+
+    return null;
+  }
+
+  private async resetSession(sessionId: string): Promise<UserSession> {
+    return prisma.userSession.update({
+      where: { id: sessionId },
+      data: { currentNodeId: null, context: {} },
+    });
+  }
+
   private async logMessage(
     botId: string,
     senderId: string,
     content: string,
     direction: 'incoming' | 'outgoing'
   ): Promise<void> {
+    // Update analytics first (before creating message) to check unique users
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if this sender has already sent a message today (for unique user tracking)
+    let isNewUserToday = false;
+    if (direction === 'incoming') {
+      const existingMessageToday = await prisma.message.findFirst({
+        where: {
+          botId,
+          senderId,
+          direction: 'incoming',
+          createdAt: {
+            gte: today,
+          },
+        },
+      });
+      isNewUserToday = !existingMessageToday;
+    }
+
+    // Create the message
     await prisma.message.create({
       data: {
         botId,
@@ -239,9 +387,6 @@ export class FlowExecutorService {
     });
 
     // Update analytics
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
     await prisma.analytics.upsert({
       where: { botId_date: { botId, date: today } },
       create: {
@@ -250,12 +395,13 @@ export class FlowExecutorService {
         totalMessages: 1,
         incomingMessages: direction === 'incoming' ? 1 : 0,
         outgoingMessages: direction === 'outgoing' ? 1 : 0,
-        uniqueUsers: 1,
+        uniqueUsers: isNewUserToday ? 1 : 0,
       },
       update: {
         totalMessages: { increment: 1 },
         incomingMessages: direction === 'incoming' ? { increment: 1 } : undefined,
         outgoingMessages: direction === 'outgoing' ? { increment: 1 } : undefined,
+        uniqueUsers: isNewUserToday ? { increment: 1 } : undefined,
       },
     });
   }

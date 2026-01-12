@@ -1,4 +1,5 @@
 import { Bot } from '@prisma/client';
+import { decrypt, isEncrypted } from '../utils/crypto.js';
 
 interface QuickReplyButton {
   title: string;
@@ -10,28 +11,53 @@ interface QuickReplyData {
   buttons: QuickReplyButton[];
 }
 
+interface CardButton {
+  title: string;
+  type: 'postback' | 'url';
+  payload?: string;
+  url?: string;
+}
+
+interface CardData {
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  buttons: CardButton[];
+}
+
 export class MessengerService {
   private readonly graphApiUrl = 'https://graph.facebook.com/v18.0';
 
+  // Decrypt token if encrypted
+  private getToken(bot: Bot): string | null {
+    if (!bot.facebookToken) return null;
+    if (isEncrypted(bot.facebookToken)) {
+      return decrypt(bot.facebookToken);
+    }
+    return bot.facebookToken;
+  }
+
   async sendText(bot: Bot, recipientId: string, text: string): Promise<void> {
-    if (!bot.facebookToken) {
+    const token = this.getToken(bot);
+    if (!token) {
       console.log(`[Mock] Sending text to ${recipientId}: ${text}`);
       return;
     }
 
-    await this.callSendApi(bot.facebookToken, {
+    await this.callSendApi(token, {
       recipient: { id: recipientId },
       message: { text },
     });
   }
 
   async sendImage(bot: Bot, recipientId: string, imageUrl: string): Promise<void> {
-    if (!bot.facebookToken) {
+    const token = this.getToken(bot);
+    if (!token) {
       console.log(`[Mock] Sending image to ${recipientId}: ${imageUrl}`);
       return;
     }
 
-    await this.callSendApi(bot.facebookToken, {
+    await this.callSendApi(token, {
       recipient: { id: recipientId },
       message: {
         attachment: {
@@ -47,7 +73,8 @@ export class MessengerService {
     recipientId: string,
     data: QuickReplyData
   ): Promise<void> {
-    if (!bot.facebookToken) {
+    const token = this.getToken(bot);
+    if (!token) {
       console.log(`[Mock] Sending quick replies to ${recipientId}:`, data);
       return;
     }
@@ -58,12 +85,86 @@ export class MessengerService {
       payload: btn.payload,
     }));
 
-    await this.callSendApi(bot.facebookToken, {
+    await this.callSendApi(token, {
       recipient: { id: recipientId },
       message: {
         text: data.message,
         quick_replies: quickReplies,
       },
+    });
+  }
+
+  async sendCard(
+    bot: Bot,
+    recipientId: string,
+    data: CardData
+  ): Promise<void> {
+    const token = this.getToken(bot);
+    if (!token) {
+      console.log(`[Mock] Sending card to ${recipientId}:`, data);
+      return;
+    }
+
+    // Build buttons for generic template
+    const buttons = data.buttons.map((btn) => {
+      if (btn.type === 'url') {
+        return {
+          type: 'web_url',
+          url: btn.url,
+          title: btn.title,
+        };
+      }
+      return {
+        type: 'postback',
+        title: btn.title,
+        payload: btn.payload || btn.title,
+      };
+    });
+
+    const element: Record<string, unknown> = {
+      title: data.title,
+    };
+
+    if (data.subtitle) {
+      element.subtitle = data.subtitle;
+    }
+
+    if (data.imageUrl) {
+      element.image_url = data.imageUrl;
+    }
+
+    if (buttons.length > 0) {
+      element.buttons = buttons;
+    }
+
+    await this.callSendApi(token, {
+      recipient: { id: recipientId },
+      message: {
+        attachment: {
+          type: 'template',
+          payload: {
+            template_type: 'generic',
+            elements: [element],
+          },
+        },
+      },
+    });
+  }
+
+  async sendTypingIndicator(
+    bot: Bot,
+    recipientId: string,
+    isTyping: boolean
+  ): Promise<void> {
+    const token = this.getToken(bot);
+    if (!token) {
+      console.log(`[Mock] Typing ${isTyping ? 'on' : 'off'} for ${recipientId}`);
+      return;
+    }
+
+    await this.callSendApi(token, {
+      recipient: { id: recipientId },
+      sender_action: isTyping ? 'typing_on' : 'typing_off',
     });
   }
 

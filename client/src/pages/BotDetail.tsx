@@ -13,19 +13,27 @@ import {
   Plus,
   Trash2,
   Star,
-  ExternalLink,
+  Copy,
+  Link as LinkIcon,
+  Check,
+  Radio,
+  Users,
+  MessageCircle,
 } from 'lucide-react';
 
 export function BotDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentBot, loadBot, updateBot, isLoading } = useBotStore();
-  const { flows, loadFlows, createFlow, deleteFlow } = useFlowStore();
+  const { flows, loadFlows, createFlow, deleteFlow, setDefaultFlow, duplicateFlow } = useFlowStore();
   const [showSettings, setShowSettings] = useState(false);
   const [botName, setBotName] = useState('');
   const [botDescription, setBotDescription] = useState('');
   const [showCreateFlow, setShowCreateFlow] = useState(false);
   const [newFlowName, setNewFlowName] = useState('');
+  const [copiedWebhook, setCopiedWebhook] = useState(false);
+
+  const webhookUrl = currentBot ? `${window.location.origin.replace('5173', '3001')}/api/webhook/${currentBot.id}` : '';
 
   useEffect(() => {
     if (id) {
@@ -63,6 +71,22 @@ export function BotDetailPage() {
     }
   };
 
+  const handleSetDefault = async (flowId: string) => {
+    if (!id) return;
+    await setDefaultFlow(id, flowId);
+  };
+
+  const handleDuplicateFlow = async (flowId: string) => {
+    if (!id) return;
+    await duplicateFlow(id, flowId);
+  };
+
+  const handleCopyWebhook = () => {
+    navigator.clipboard.writeText(webhookUrl);
+    setCopiedWebhook(true);
+    setTimeout(() => setCopiedWebhook(false), 2000);
+  };
+
   if (isLoading || !currentBot) {
     return (
       <MainLayout>
@@ -95,7 +119,7 @@ export function BotDetailPage() {
         </div>
 
         {/* Status */}
-        <Card className="mb-8">
+        <Card className="mb-4">
           <CardContent className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div
@@ -118,6 +142,79 @@ export function BotDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Webhook URL */}
+        <Card className="mb-8">
+          <CardContent>
+            <div className="flex items-center gap-2 mb-2">
+              <LinkIcon className="w-4 h-4 text-gray-500" />
+              <span className="text-sm font-medium text-gray-700">Webhook URL</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 px-3 py-2 bg-gray-100 rounded-lg text-sm text-gray-800 font-mono truncate">
+                {webhookUrl}
+              </code>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleCopyWebhook}
+                className="shrink-0"
+              >
+                {copiedWebhook ? (
+                  <Check className="w-4 h-4 text-green-600" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Use this URL to configure your Facebook Messenger webhook
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-3 gap-4 mb-8">
+          <Link to={`/bots/${id}/broadcasts`}>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="flex items-center gap-4">
+                <div className="p-3 bg-orange-100 rounded-lg">
+                  <Radio className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Broadcasts</h3>
+                  <p className="text-sm text-gray-500">Send messages to contacts</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to={`/bots/${id}/live-chat`}>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="flex items-center gap-4">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <MessageCircle className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Live Chat</h3>
+                  <p className="text-sm text-gray-500">Chat with users in real-time</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to={`/bots/${id}/people`}>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="flex items-center gap-4">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">People</h3>
+                  <p className="text-sm text-gray-500">View contacts & history</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
 
         {/* Flows */}
         <div>
@@ -159,15 +256,30 @@ export function BotDetailPage() {
                         >
                           {flow.isActive ? 'Active' : 'Inactive'}
                         </span>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1">
+                          {!flow.isDefault && (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSetDefault(flow.id);
+                              }}
+                              className="p-1.5 text-gray-500 hover:text-yellow-600 hover:bg-yellow-50 rounded"
+                              title="Set as Default"
+                            >
+                              <Star className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
+                              handleDuplicateFlow(flow.id);
                             }}
                             className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
+                            title="Duplicate Flow"
                           >
-                            <ExternalLink className="w-4 h-4" />
+                            <Copy className="w-4 h-4" />
                           </button>
                           {!flow.isDefault && (
                             <button
@@ -177,6 +289,7 @@ export function BotDetailPage() {
                                 handleDeleteFlow(flow.id);
                               }}
                               className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                              title="Delete Flow"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

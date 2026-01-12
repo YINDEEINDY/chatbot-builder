@@ -1,6 +1,7 @@
 import { StartNode } from './StartNode';
 import { TextNode } from './TextNode';
 import { ImageNode } from './ImageNode';
+import { CardNode } from './CardNode';
 import { QuickReplyNode } from './QuickReplyNode';
 import { UserInputNode } from './UserInputNode';
 import { ConditionNode } from './ConditionNode';
@@ -12,6 +13,7 @@ export const nodeTypes: Record<string, React.ComponentType<any>> = {
   start: StartNode,
   text: TextNode,
   image: ImageNode,
+  card: CardNode,
   quickReply: QuickReplyNode,
   userInput: UserInputNode,
   condition: ConditionNode,
@@ -23,6 +25,7 @@ export {
   StartNode,
   TextNode,
   ImageNode,
+  CardNode,
   QuickReplyNode,
   UserInputNode,
   ConditionNode,

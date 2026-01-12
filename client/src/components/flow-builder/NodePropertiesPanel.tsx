@@ -1,9 +1,9 @@
 import type { Node } from '@xyflow/react';
 import { useFlowStore } from '../../stores/flow.store';
-import type { NodeData, NodeType, QuickReplyButton } from '../../types';
+import type { NodeData, NodeType, QuickReplyButton, CardButton } from '../../types';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, ExternalLink, MousePointerClick } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
 interface NodePropertiesPanelProps {
@@ -73,6 +73,123 @@ export function NodePropertiesPanel({ node, onClose }: NodePropertiesPanelProps)
               onChange={(e) => handleChange('caption', e.target.value)}
               placeholder="Image caption..."
             />
+          </div>
+        );
+
+      case 'card':
+        const cardData = data as { title?: string; subtitle?: string; imageUrl?: string; buttons?: CardButton[] };
+        return (
+          <div className="space-y-4">
+            <Input
+              label="Image URL"
+              value={cardData.imageUrl || ''}
+              onChange={(e) => handleChange('imageUrl', e.target.value)}
+              placeholder="https://example.com/image.jpg"
+            />
+            <Input
+              label="Title"
+              value={cardData.title || ''}
+              onChange={(e) => handleChange('title', e.target.value)}
+              placeholder="Card Title"
+            />
+            <Input
+              label="Subtitle"
+              value={cardData.subtitle || ''}
+              onChange={(e) => handleChange('subtitle', e.target.value)}
+              placeholder="Card subtitle..."
+            />
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-gray-700">Buttons (max 3)</label>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    if ((cardData.buttons || []).length >= 3) return;
+                    const newButton: CardButton = {
+                      id: uuidv4(),
+                      title: 'Button',
+                      type: 'postback',
+                      payload: 'button_clicked',
+                    };
+                    handleChange('buttons', [...(cardData.buttons || []), newButton]);
+                  }}
+                  disabled={(cardData.buttons || []).length >= 3}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {(cardData.buttons || []).map((btn, index) => (
+                  <div key={btn.id} className="p-2 bg-gray-50 rounded-lg space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={btn.title}
+                        onChange={(e) => {
+                          const newButtons = [...(cardData.buttons || [])];
+                          newButtons[index] = { ...btn, title: e.target.value };
+                          handleChange('buttons', newButtons);
+                        }}
+                        placeholder="Button title"
+                        className="flex-1"
+                      />
+                      <button
+                        onClick={() => {
+                          const newButtons = (cardData.buttons || []).filter((_, i) => i !== index);
+                          handleChange('buttons', newButtons);
+                        }}
+                        className="p-2 text-red-500 hover:bg-red-50 rounded"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={btn.type}
+                        onChange={(e) => {
+                          const newButtons = [...(cardData.buttons || [])];
+                          newButtons[index] = { ...btn, type: e.target.value as 'postback' | 'url' };
+                          handleChange('buttons', newButtons);
+                        }}
+                        className="px-2 py-1 text-sm border border-gray-300 rounded"
+                      >
+                        <option value="postback">Postback</option>
+                        <option value="url">URL</option>
+                      </select>
+                      {btn.type === 'postback' ? (
+                        <div className="flex items-center gap-1 flex-1">
+                          <MousePointerClick className="w-4 h-4 text-gray-400" />
+                          <Input
+                            value={btn.payload || ''}
+                            onChange={(e) => {
+                              const newButtons = [...(cardData.buttons || [])];
+                              newButtons[index] = { ...btn, payload: e.target.value };
+                              handleChange('buttons', newButtons);
+                            }}
+                            placeholder="Payload"
+                            className="flex-1"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 flex-1">
+                          <ExternalLink className="w-4 h-4 text-gray-400" />
+                          <Input
+                            value={btn.url || ''}
+                            onChange={(e) => {
+                              const newButtons = [...(cardData.buttons || [])];
+                              newButtons[index] = { ...btn, url: e.target.value };
+                              handleChange('buttons', newButtons);
+                            }}
+                            placeholder="https://..."
+                            className="flex-1"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         );
 
@@ -191,17 +308,35 @@ export function NodePropertiesPanel({ node, onClose }: NodePropertiesPanelProps)
         );
 
       case 'delay':
+        const delayData = data as { seconds?: number; showTyping?: boolean };
         return (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Delay (seconds)</label>
-            <input
-              type="number"
-              min={0}
-              max={60}
-              value={(data as { seconds?: number }).seconds || 0}
-              onChange={(e) => handleChange('seconds', parseInt(e.target.value) || 0)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Delay (seconds)</label>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                value={delayData.seconds || 1}
+                onChange={(e) => handleChange('seconds', parseInt(e.target.value) || 1)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={delayData.showTyping !== false}
+                  onChange={(e) => handleChange('showTyping', e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+              <span className="text-sm text-gray-700">Show typing indicator</span>
+            </div>
+            <p className="text-xs text-gray-500">
+              When enabled, shows "..." typing animation to the user during the delay.
+            </p>
           </div>
         );
 

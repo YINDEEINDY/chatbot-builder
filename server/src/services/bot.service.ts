@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js';
 import { AppError } from '../middlewares/errorHandler.js';
 import { v4 as uuidv4 } from 'uuid';
+import { encrypt, decrypt, isEncrypted } from '../utils/crypto.js';
 
 interface CreateBotInput {
   name: string;
@@ -117,14 +118,30 @@ export class BotService {
       throw new AppError('Bot not found', 404);
     }
 
+    // Encrypt the access token before storing
+    const encryptedToken = encrypt(accessToken);
+
     return prisma.bot.update({
       where: { id: botId },
       data: {
         facebookPageId: pageId,
-        facebookToken: accessToken,
+        facebookToken: encryptedToken,
         isActive: true,
       },
     });
+  }
+
+  // Helper to get decrypted Facebook token
+  getDecryptedToken(encryptedToken: string | null): string | null {
+    if (!encryptedToken) return null;
+
+    // Check if already encrypted (for backwards compatibility)
+    if (isEncrypted(encryptedToken)) {
+      return decrypt(encryptedToken);
+    }
+
+    // Return as-is if not encrypted (legacy data)
+    return encryptedToken;
   }
 }
 

@@ -9,6 +9,9 @@ import { DashboardPage } from './pages/Dashboard';
 import { BotListPage } from './pages/BotList';
 import { BotDetailPage } from './pages/BotDetail';
 import { FlowEditorPage } from './pages/FlowEditorPage';
+import { BroadcastListPage } from './pages/BroadcastList';
+import { PeoplePage } from './pages/PeoplePage';
+import { LiveChatPage } from './pages/LiveChatPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -104,6 +107,30 @@ function App() {
           element={
             <PrivateRoute>
               <FlowEditorPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/broadcasts"
+          element={
+            <PrivateRoute>
+              <BroadcastListPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/people"
+          element={
+            <PrivateRoute>
+              <PeoplePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/live-chat"
+          element={
+            <PrivateRoute>
+              <LiveChatPage />
             </PrivateRoute>
           }
         />
