@@ -55,8 +55,10 @@ export class ConversationController {
 
       res.json({
         success: true,
-        data: result.messages,
-        pagination: result.pagination,
+        data: {
+          messages: result.messages,
+          pagination: result.pagination,
+        },
       });
     } catch (error) {
       next(error);

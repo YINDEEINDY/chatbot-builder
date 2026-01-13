@@ -9,6 +9,7 @@ const router = Router({ mergeParams: true });
 router.use(auth);
 
 router.get('/', validate(botIdParamSchema), blockController.list.bind(blockController));
+router.get('/groups', validate(botIdParamSchema), blockController.getGroups.bind(blockController));
 router.post('/', validate(createBlockSchema), blockController.create.bind(blockController));
 router.get('/:blockId', validate(blockIdSchema), blockController.get.bind(blockController));
 router.put('/:blockId', validate(updateBlockSchema), blockController.update.bind(blockController));

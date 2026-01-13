@@ -15,6 +15,28 @@ interface LoginInput {
   password: string;
 }
 
+interface FacebookProfile {
+  id: string;
+  email?: string;
+  name: string;
+  picture?: {
+    data?: {
+      url?: string;
+    };
+  };
+}
+
+interface FacebookPage {
+  id: string;
+  name: string;
+  access_token: string;
+  picture?: {
+    data?: {
+      url?: string;
+    };
+  };
+}
+
 export class AuthService {
   async register(input: RegisterInput) {
     const existingUser = await prisma.user.findUnique({
@@ -37,6 +59,7 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        profilePic: true,
         createdAt: true,
       },
     });
@@ -55,6 +78,11 @@ export class AuthService {
       throw new AppError('Invalid email or password', 401);
     }
 
+    // Check if user has a password (might be Facebook-only user)
+    if (!user.password) {
+      throw new AppError('This account uses Facebook login. Please login with Facebook.', 401);
+    }
+
     const isPasswordValid = await bcrypt.compare(input.password, user.password);
 
     if (!isPasswordValid) {
@@ -68,10 +96,101 @@ export class AuthService {
         id: user.id,
         email: user.email,
         name: user.name,
+        profilePic: user.profilePic,
         createdAt: user.createdAt,
       },
       token,
     };
+  }
+
+  async loginWithFacebook(accessToken: string) {
+    // Fetch user profile from Facebook
+    const profileResponse = await fetch(
+      `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${accessToken}`
+    );
+
+    if (!profileResponse.ok) {
+      throw new AppError('Failed to fetch Facebook profile', 401);
+    }
+
+    const profile: FacebookProfile = await profileResponse.json();
+
+    if (!profile.id) {
+      throw new AppError('Invalid Facebook profile', 401);
+    }
+
+    // Check if user exists by Facebook ID
+    let user = await prisma.user.findFirst({
+      where: { facebookId: profile.id },
+    });
+
+    if (!user && profile.email) {
+      // Check if user exists by email
+      user = await prisma.user.findUnique({
+        where: { email: profile.email },
+      });
+
+      if (user) {
+        // Link Facebook to existing account
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            facebookId: profile.id,
+            profilePic: profile.picture?.data?.url || user.profilePic,
+          },
+        });
+      }
+    }
+
+    if (!user) {
+      // Create new user
+      const email = profile.email || `fb_${profile.id}@facebook.local`;
+      user = await prisma.user.create({
+        data: {
+          email,
+          name: profile.name,
+          facebookId: profile.id,
+          profilePic: profile.picture?.data?.url,
+          password: null, // No password for Facebook users
+        },
+      });
+    } else {
+      // Update profile pic if changed
+      if (profile.picture?.data?.url && profile.picture.data.url !== user.profilePic) {
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { profilePic: profile.picture.data.url },
+        });
+      }
+    }
+
+    const token = this.generateToken(user.id);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        profilePic: user.profilePic,
+        createdAt: user.createdAt,
+      },
+      token,
+    };
+  }
+
+  // Exchange Facebook authorization code for access token
+  async exchangeFacebookCode(code: string): Promise<string> {
+    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(env.FACEBOOK_REDIRECT_URI)}&client_secret=${env.FACEBOOK_APP_SECRET}&code=${code}`;
+
+    const response = await fetch(tokenUrl);
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('Facebook token exchange error:', data.error);
+      throw new AppError(data.error.message || 'Failed to exchange Facebook code', 401);
+    }
+
+    return data.access_token;
   }
 
   async getMe(userId: string) {
@@ -81,6 +200,8 @@ export class AuthService {
         id: true,
         email: true,
         name: true,
+        profilePic: true,
+        facebookId: true,
         createdAt: true,
       },
     });
@@ -90,6 +211,78 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  // Get Facebook OAuth URL
+  getFacebookAuthUrl(): string {
+    const params = new URLSearchParams({
+      client_id: env.FACEBOOK_APP_ID,
+      redirect_uri: env.FACEBOOK_REDIRECT_URI,
+      scope: 'email,public_profile',
+      response_type: 'code',
+    });
+
+    return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+  }
+
+  // Get Facebook Pages OAuth URL (with page permissions) - Uses Business App
+  getFacebookPagesAuthUrl(botId: string): string {
+    const params = new URLSearchParams({
+      client_id: env.FACEBOOK_PAGES_APP_ID,
+      redirect_uri: env.FACEBOOK_PAGES_REDIRECT_URI,
+      scope: 'pages_show_list,pages_messaging,pages_read_engagement,pages_manage_metadata',
+      response_type: 'code',
+      state: botId, // Pass botId in state to know which bot to connect
+    });
+
+    return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+  }
+
+  // Exchange code for user token (for pages) - Uses Business App
+  async exchangeFacebookPagesCode(code: string): Promise<string> {
+    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${env.FACEBOOK_PAGES_APP_ID}&redirect_uri=${encodeURIComponent(env.FACEBOOK_PAGES_REDIRECT_URI)}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&code=${code}`;
+
+    const response = await fetch(tokenUrl);
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('Facebook pages token exchange error:', data.error);
+      throw new AppError(data.error.message || 'Failed to exchange Facebook code', 401);
+    }
+
+    return data.access_token;
+  }
+
+  // Get list of Facebook Pages managed by user
+  async getFacebookPages(userAccessToken: string): Promise<FacebookPage[]> {
+    const url = `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token,picture&access_token=${userAccessToken}`;
+
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('Facebook pages error:', data.error);
+      throw new AppError(data.error.message || 'Failed to get Facebook pages', 401);
+    }
+
+    return data.data || [];
+  }
+
+  // Get long-lived page access token - Uses Business App
+  async getLongLivedPageToken(pageAccessToken: string): Promise<string> {
+    const response = await fetch(
+      `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.FACEBOOK_PAGES_APP_ID}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&fb_exchange_token=${pageAccessToken}`
+    );
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.error('Long-lived token error:', data.error);
+      // Return original token if exchange fails
+      return pageAccessToken;
+    }
+
+    return data.access_token || pageAccessToken;
   }
 
   private generateToken(userId: string): string {

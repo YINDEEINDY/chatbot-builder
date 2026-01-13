@@ -1,19 +1,24 @@
 import { apiClient } from './client';
-import type { ApiResponse, Block, NodeData, NodeType } from '../types';
+import type { ApiResponse, Block, BlockCard } from '../types';
 
 interface CreateBlockData {
   name: string;
-  description?: string;
-  nodeType: NodeType;
-  nodeData: NodeData;
-  category?: string;
+  groupName?: string | null;
+  isWelcome?: boolean;
+  isDefaultAnswer?: boolean;
+  isEnabled?: boolean;
+  cards?: BlockCard[];
+  triggers?: string[];
 }
 
 interface UpdateBlockData {
   name?: string;
-  description?: string;
-  nodeData?: NodeData;
-  category?: string;
+  groupName?: string | null;
+  isWelcome?: boolean;
+  isDefaultAnswer?: boolean;
+  isEnabled?: boolean;
+  cards?: BlockCard[];
+  triggers?: string[];
 }
 
 export const blocksApi = {
@@ -24,6 +29,11 @@ export const blocksApi = {
 
   get: async (botId: string, blockId: string) => {
     const response = await apiClient.get<ApiResponse<Block>>(`/bots/${botId}/blocks/${blockId}`);
+    return response.data;
+  },
+
+  getGroups: async (botId: string) => {
+    const response = await apiClient.get<ApiResponse<string[]>>(`/bots/${botId}/blocks/groups`);
     return response.data;
   },
 

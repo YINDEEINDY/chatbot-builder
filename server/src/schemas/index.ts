@@ -101,17 +101,25 @@ export const botIdParamSchema = z.object({
   }),
 });
 
-// Block schemas
+// Block schemas (Chatfuel-style)
+const blockCardSchema = z.object({
+  type: z.enum(['text', 'image', 'gallery', 'quickReply', 'userInput', 'delay', 'goToBlock']),
+  id: z.string(),
+  // Other fields are flexible based on card type
+}).passthrough();
+
 export const createBlockSchema = z.object({
   params: z.object({
     botId: z.string().uuid('Invalid bot ID'),
   }),
   body: z.object({
     name: z.string().min(1, 'Block name is required').max(100, 'Block name too long'),
-    description: z.string().max(500, 'Description too long').optional(),
-    nodeType: z.enum(['text', 'image', 'card', 'quickReply', 'userInput', 'condition', 'delay']),
-    nodeData: z.record(z.unknown()),
-    category: z.string().max(50, 'Category too long').optional(),
+    groupName: z.string().max(50, 'Group name too long').optional().nullable(),
+    isWelcome: z.boolean().optional(),
+    isDefaultAnswer: z.boolean().optional(),
+    isEnabled: z.boolean().optional(),
+    cards: z.array(blockCardSchema).optional(),
+    triggers: z.array(z.string()).optional(),
   }),
 });
 
@@ -122,9 +130,12 @@ export const updateBlockSchema = z.object({
   }),
   body: z.object({
     name: z.string().min(1).max(100).optional(),
-    description: z.string().max(500).optional(),
-    nodeData: z.record(z.unknown()).optional(),
-    category: z.string().max(50).optional(),
+    groupName: z.string().max(50).optional().nullable(),
+    isWelcome: z.boolean().optional(),
+    isDefaultAnswer: z.boolean().optional(),
+    isEnabled: z.boolean().optional(),
+    cards: z.array(blockCardSchema).optional(),
+    triggers: z.array(z.string()).optional(),
   }),
 });
 

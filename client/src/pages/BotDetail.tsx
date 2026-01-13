@@ -19,6 +19,9 @@ import {
   Radio,
   Users,
   MessageCircle,
+  ToggleLeft,
+  ToggleRight,
+  Loader2,
 } from 'lucide-react';
 
 export function BotDetailPage() {
@@ -32,6 +35,7 @@ export function BotDetailPage() {
   const [showCreateFlow, setShowCreateFlow] = useState(false);
   const [newFlowName, setNewFlowName] = useState('');
   const [copiedWebhook, setCopiedWebhook] = useState(false);
+  const [isTogglingActive, setIsTogglingActive] = useState(false);
 
   const webhookUrl = currentBot ? `${window.location.origin.replace('5173', '3001')}/api/webhook/${currentBot.id}` : '';
 
@@ -87,6 +91,18 @@ export function BotDetailPage() {
     setTimeout(() => setCopiedWebhook(false), 2000);
   };
 
+  const handleToggleActive = async () => {
+    if (!id || !currentBot) return;
+    setIsTogglingActive(true);
+    try {
+      await updateBot(id, { isActive: !currentBot.isActive });
+    } catch (error) {
+      console.error('Failed to toggle bot status:', error);
+    } finally {
+      setIsTogglingActive(false);
+    }
+  };
+
   if (isLoading || !currentBot) {
     return (
       <MainLayout>
@@ -119,24 +135,32 @@ export function BotDetailPage() {
         </div>
 
         {/* Status */}
-        <Card className="mb-4">
+        <Card className={`mb-4 ${currentBot.isActive ? 'border-green-200' : 'border-gray-200'}`}>
           <CardContent className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div
-                className={`w-3 h-3 rounded-full ${
-                  currentBot.isActive ? 'bg-green-500' : 'bg-gray-300'
-                }`}
-              />
-              <span className="text-gray-700">
+              <button
+                onClick={handleToggleActive}
+                disabled={isTogglingActive}
+                className="focus:outline-none disabled:opacity-50"
+              >
+                {isTogglingActive ? (
+                  <Loader2 className="w-8 h-8 text-gray-400 animate-spin" />
+                ) : currentBot.isActive ? (
+                  <ToggleRight className="w-8 h-8 text-green-600" />
+                ) : (
+                  <ToggleLeft className="w-8 h-8 text-gray-400" />
+                )}
+              </button>
+              <span className={`font-medium ${currentBot.isActive ? 'text-green-600' : 'text-gray-500'}`}>
                 {currentBot.isActive ? 'Bot is active' : 'Bot is inactive'}
               </span>
             </div>
             {currentBot.facebookPageId ? (
               <span className="text-sm text-gray-500">
-                Connected to Facebook Page: {currentBot.facebookPageId}
+                Connected: {currentBot.facebookPageName || currentBot.facebookPageId}
               </span>
             ) : (
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary" size="sm" onClick={() => navigate(`/bots/${id}/settings`)}>
                 Connect Facebook
               </Button>
             )}

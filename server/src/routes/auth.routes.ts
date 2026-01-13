@@ -6,8 +6,21 @@ import { registerSchema, loginSchema } from '../schemas/index.js';
 
 const router = Router();
 
+// Email/Password auth
 router.post('/register', validate(registerSchema), authController.register.bind(authController));
 router.post('/login', validate(loginSchema), authController.login.bind(authController));
 router.get('/me', auth, authController.getMe.bind(authController));
+
+// Facebook OAuth (User Login)
+router.get('/facebook', authController.getFacebookAuthUrl.bind(authController));
+router.get('/facebook/callback', authController.facebookCallback.bind(authController));
+router.post('/facebook/token', authController.facebookLogin.bind(authController));
+
+// Facebook Pages OAuth (Connect Page to Bot)
+router.get('/facebook/pages', auth, authController.getFacebookPagesAuthUrl.bind(authController));
+router.get('/facebook/pages/callback', authController.facebookPagesCallback.bind(authController));
+router.get('/facebook/pages/session/:sessionId', auth, authController.getFacebookPagesFromSession.bind(authController));
+router.post('/facebook/pages/:botId/connect', auth, authController.connectFacebookPage.bind(authController));
+router.delete('/facebook/pages/:botId/disconnect', auth, authController.disconnectFacebookPage.bind(authController));
 
 export default router;

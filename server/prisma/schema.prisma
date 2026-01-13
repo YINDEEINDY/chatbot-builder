@@ -8,13 +8,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  bots      Bot[]
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String?  // Optional for Facebook-only users
+  name       String
+  facebookId String?  // Facebook User ID
+  profilePic String?  // Profile picture URL
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  bots       Bot[]
+
+  @@index([facebookId])
 }
 
 model Bot {
@@ -24,6 +28,7 @@ model Bot {
   userId             String
   user               User           @relation(fields: [userId], references: [id])
   facebookPageId     String?
+  facebookPageName   String?
   facebookToken      String?
   webhookVerifyToken String         @default(uuid())
   isActive           Boolean        @default(false)
@@ -54,14 +59,16 @@ model Flow {
 }
 
 model UserSession {
-  id            String   @id @default(uuid())
-  botId         String
-  bot           Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
-  senderId      String
-  currentNodeId String?
-  context       String   @default("{}") @db.NVarChar(Max)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id             String   @id @default(uuid())
+  botId          String
+  bot            Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  senderId       String
+  currentNodeId  String?  // For Flow-based execution
+  currentBlockId String?  // For Block-based execution
+  currentCardIdx Int      @default(0) // Current card index within the block
+  context        String   @default("{}") @db.NVarChar(Max)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@unique([botId, senderId])
 }
@@ -90,17 +97,20 @@ model Analytics {
   @@unique([botId, date])
 }
 
+// Block - Chatfuel-style conversation blocks (like pages/screens)
 model Block {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  botId       String
-  bot         Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
-  nodeType    String   // text, image, card, quickReply, userInput, condition, delay
-  nodeData    String   @db.NVarChar(Max) // JSON containing the node's data configuration
-  category    String?  // For organizing blocks: welcome, support, sales, etc.
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(uuid())
+  name            String
+  botId           String
+  bot             Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  groupName       String?  // For organizing blocks into groups (e.g., "DEFAULT", "REGISTER")
+  isWelcome       Boolean  @default(false) // Welcome Message - first block user sees
+  isDefaultAnswer Boolean  @default(false) // Default Answer - when bot doesn't understand
+  isEnabled       Boolean  @default(true)  // Whether this block is active
+  cards           String   @default("[]") @db.NVarChar(Max) // JSON array of cards/messages
+  triggers        String   @default("[]") @db.NVarChar(Max) // Keywords that trigger this block
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 // Contact - Users who have interacted with the bot

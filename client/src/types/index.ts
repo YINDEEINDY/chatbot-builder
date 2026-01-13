@@ -3,6 +3,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  profilePic?: string;
+  facebookId?: string;
   createdAt: string;
 }
 
@@ -13,6 +15,7 @@ export interface Bot {
   description?: string;
   userId: string;
   facebookPageId?: string;
+  facebookPageName?: string;
   facebookToken?: string;
   webhookVerifyToken: string;
   isActive: boolean;
@@ -132,15 +135,92 @@ export interface FlowEdge {
   targetHandle?: string;
 }
 
-// Block types (reusable node templates)
+// Block Card types (Chatfuel-style)
+export type BlockCardType = 'text' | 'image' | 'gallery' | 'quickReply' | 'userInput' | 'delay' | 'goToBlock';
+
+export interface TextBlockCard {
+  type: 'text';
+  id: string;
+  text: string;
+}
+
+export interface ImageBlockCard {
+  type: 'image';
+  id: string;
+  imageUrl: string;
+  caption?: string;
+}
+
+export interface BlockCardButton {
+  id: string;
+  title: string;
+  type: 'postback' | 'url' | 'block';
+  payload?: string;
+  url?: string;
+  blockId?: string;
+}
+
+export interface GalleryBlockCard {
+  type: 'gallery';
+  id: string;
+  title: string;
+  subtitle?: string;
+  imageUrl?: string;
+  buttons: BlockCardButton[];
+}
+
+export interface QuickReplyBlockCard {
+  type: 'quickReply';
+  id: string;
+  text: string;
+  buttons: Array<{
+    id: string;
+    title: string;
+    blockId?: string;
+  }>;
+}
+
+export interface UserInputBlockCard {
+  type: 'userInput';
+  id: string;
+  prompt: string;
+  variableName: string;
+  nextBlockId?: string;
+}
+
+export interface DelayBlockCard {
+  type: 'delay';
+  id: string;
+  seconds: number;
+  showTyping?: boolean;
+}
+
+export interface GoToBlockCard {
+  type: 'goToBlock';
+  id: string;
+  blockId: string;
+}
+
+export type BlockCard =
+  | TextBlockCard
+  | ImageBlockCard
+  | GalleryBlockCard
+  | QuickReplyBlockCard
+  | UserInputBlockCard
+  | DelayBlockCard
+  | GoToBlockCard;
+
+// Block types (Chatfuel-style conversation blocks)
 export interface Block {
   id: string;
   name: string;
-  description?: string;
   botId: string;
-  nodeType: NodeType;
-  nodeData: string; // JSON string of NodeData
-  category?: string;
+  groupName?: string;
+  isWelcome: boolean;
+  isDefaultAnswer: boolean;
+  isEnabled: boolean;
+  cards: string; // JSON string of BlockCard[]
+  triggers: string; // JSON string of string[]
   createdAt: string;
   updatedAt: string;
 }

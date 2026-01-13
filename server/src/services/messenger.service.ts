@@ -57,6 +57,12 @@ export class MessengerService {
       return;
     }
 
+    // Check if it's a base64 data URL - Facebook doesn't support these
+    if (imageUrl.startsWith('data:')) {
+      console.warn(`[Messenger] Skipping base64 image - Facebook requires a public URL. Please use an image URL instead.`);
+      return;
+    }
+
     await this.callSendApi(token, {
       recipient: { id: recipientId },
       message: {
@@ -130,7 +136,12 @@ export class MessengerService {
     }
 
     if (data.imageUrl) {
-      element.image_url = data.imageUrl;
+      // Skip base64 images - Facebook requires public URLs
+      if (data.imageUrl.startsWith('data:')) {
+        console.warn(`[Messenger] Skipping base64 image in card - Facebook requires a public URL.`);
+      } else {
+        element.image_url = data.imageUrl;
+      }
     }
 
     if (buttons.length > 0) {

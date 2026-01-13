@@ -12,6 +12,14 @@ import { FlowEditorPage } from './pages/FlowEditorPage';
 import { BroadcastListPage } from './pages/BroadcastList';
 import { PeoplePage } from './pages/PeoplePage';
 import { LiveChatPage } from './pages/LiveChatPage';
+import { BlocksPage } from './pages/BlocksPage';
+import { BlockEditorPage } from './pages/BlockEditorPage';
+import { FlowsPage } from './pages/FlowsPage';
+import { AuthCallbackPage } from './pages/AuthCallback';
+import { GrowPage } from './pages/GrowPage';
+import { AnalyzePage } from './pages/AnalyzePage';
+import { ConfigurePage } from './pages/ConfigurePage';
+import { KeywordsPage } from './pages/KeywordsPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -77,6 +85,9 @@ function App() {
           }
         />
 
+        {/* OAuth callback - no auth check needed */}
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
         {/* Private routes */}
         <Route
           path="/dashboard"
@@ -99,6 +110,14 @@ function App() {
           element={
             <PrivateRoute>
               <BotDetailPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/flows"
+          element={
+            <PrivateRoute>
+              <FlowsPage />
             </PrivateRoute>
           }
         />
@@ -131,6 +150,54 @@ function App() {
           element={
             <PrivateRoute>
               <LiveChatPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/blocks"
+          element={
+            <PrivateRoute>
+              <BlocksPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/blocks/:blockId"
+          element={
+            <PrivateRoute>
+              <BlockEditorPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/keywords"
+          element={
+            <PrivateRoute>
+              <KeywordsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/grow"
+          element={
+            <PrivateRoute>
+              <GrowPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/analyze"
+          element={
+            <PrivateRoute>
+              <AnalyzePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/settings"
+          element={
+            <PrivateRoute>
+              <ConfigurePage />
             </PrivateRoute>
           }
         />

@@ -102,6 +102,22 @@ export class BlockController {
       next(error);
     }
   }
+
+  async getGroups(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const botId = req.params.botId as string;
+      const userId = req.userId!;
+
+      const groups = await blockService.getBlockGroups(botId, userId);
+
+      res.json({
+        success: true,
+        data: groups,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const blockController = new BlockController();

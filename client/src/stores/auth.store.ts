@@ -10,6 +10,8 @@ interface AuthState {
 
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
+  loginWithFacebook: () => Promise<void>;
+  setToken: (token: string) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
 }
@@ -20,7 +22,9 @@ const PREVIEW_MODE = false;
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: PREVIEW_MODE ? { id: 'preview', email: 'preview@test.com', name: 'Preview User' } : null,
   token: localStorage.getItem('token'),
-  isLoading: false,
+  // Start with isLoading: true if there's a token, so PrivateRoute shows loading spinner
+  // until loadUser() completes (prevents redirect race condition)
+  isLoading: !PREVIEW_MODE && !!localStorage.getItem('token'),
   isAuthenticated: PREVIEW_MODE,
 
   login: async (email: string, password: string) => {
@@ -48,6 +52,46 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } else {
       throw new Error((response as { message?: string }).message || 'Registration failed');
+    }
+  },
+
+  // Redirect to Facebook OAuth
+  loginWithFacebook: async () => {
+    console.log('auth.store: loginWithFacebook called');
+    const response = await authApi.getFacebookAuthUrl();
+    console.log('auth.store: getFacebookAuthUrl response:', response);
+    if (response.success && response.data?.url) {
+      console.log('auth.store: redirecting to:', response.data.url);
+      window.location.href = response.data.url;
+    } else {
+      throw new Error('Failed to get Facebook login URL');
+    }
+  },
+
+  // Set token after OAuth callback (used by AuthCallback page)
+  setToken: async (token: string) => {
+    localStorage.setItem('token', token);
+    set({ token, isLoading: true });
+
+    // Load user data with the new token
+    try {
+      const response = await authApi.getMe();
+      if (response.success && response.data) {
+        set({
+          user: response.data,
+          isAuthenticated: true,
+          isLoading: false,
+        });
+      }
+    } catch (error) {
+      localStorage.removeItem('token');
+      set({
+        user: null,
+        token: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
+      throw error;
     }
   },
 

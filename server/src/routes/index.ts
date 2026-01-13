@@ -17,6 +17,6 @@ router.use('/bots/:botId/blocks', blockRoutes);
 router.use('/bots/:botId/contacts', contactRoutes);
 router.use('/bots/:botId/broadcasts', broadcastRoutes);
 router.use('/bots/:botId/conversations', conversationRoutes);
-router.use('/webhook', webhookRoutes);
+router.use('/webhooks/facebook', webhookRoutes);
 
 export default router;

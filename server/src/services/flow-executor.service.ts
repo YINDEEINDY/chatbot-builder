@@ -1,7 +1,8 @@
-import { Bot, Flow, UserSession } from '@prisma/client';
+import { Bot, Flow, UserSession, Block } from '@prisma/client';
 import { prisma } from '../config/db.js';
 import { messengerService } from './messenger.service.js';
 import { contactService } from './contact.service.js';
+import { blockService, BlockCard, TextCard, ImageCard, GalleryCard, QuickReplyCard, UserInputCard, DelayCard, GoToBlockCard } from './block.service.js';
 import { FlowNode, FlowEdge, NodeType } from '../types/index.js';
 
 interface ExecutionContext {
@@ -17,112 +18,42 @@ export class FlowExecutorService {
       // 1.5. Create or update contact record
       await contactService.upsertContact(bot.id, senderId);
 
-      // 2. Find flow - check for triggered flow first, then use default or continue session
-      let flow: Flow | null = null;
-      let shouldResetSession = false;
+      // Get context from session (stored as JSON string in DB)
+      const context: ExecutionContext = session.context
+        ? JSON.parse(session.context as string)
+        : {};
 
-      // Check if message matches any trigger keywords (only if not in the middle of a conversation)
-      if (!session.currentNodeId) {
-        flow = await this.findFlowByTrigger(bot.id, message);
-        if (flow) {
-          console.log(`[FlowExecutor] Triggered flow "${flow.name}" for keyword: ${message}`);
-          shouldResetSession = true;
-        }
+      // 2. Check if we're in the middle of a Block-based conversation (waiting for user input)
+      if (session.currentBlockId) {
+        return this.continueBlockExecution(bot, senderId, message, session, context);
       }
 
-      // If no triggered flow, use the default flow
-      if (!flow) {
-        flow = await this.getDefaultFlow(bot.id);
+      // 3. Try Block-based execution first (Chatfuel-style)
+      const triggeredBlock = await blockService.findBlockByTrigger(bot.id, message);
+      if (triggeredBlock) {
+        console.log(`[FlowExecutor] Triggered block "${triggeredBlock.name}" for keyword: ${message}`);
+        return this.executeBlock(bot, senderId, triggeredBlock, session, context);
       }
 
-      if (!flow) {
-        console.error(`[FlowExecutor] No flow found for bot: ${bot.id}`);
-        await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured yet.');
-        return { success: false, error: 'No flow found' };
+      // 4. Check for Default Answer block
+      let defaultAnswerBlock = await blockService.getDefaultAnswerBlock(bot.id);
+
+      // If no Default Answer block exists, create default blocks
+      if (!defaultAnswerBlock) {
+        console.log(`[FlowExecutor] No Default Answer block found, creating default blocks for bot ${bot.id}`);
+        await blockService.createDefaultBlocks(bot.id);
+        defaultAnswerBlock = await blockService.getDefaultAnswerBlock(bot.id);
       }
 
-      // Reset session if we're starting a new triggered flow
-      if (shouldResetSession) {
-        session = await this.resetSession(session.id);
+      // 5. Use Default Answer block for response
+      if (defaultAnswerBlock) {
+        console.log(`[FlowExecutor] Using Default Answer block`);
+        return this.executeBlock(bot, senderId, defaultAnswerBlock, session, context);
       }
 
-      // Parse nodes and edges with error handling
-      let nodes: FlowNode[];
-      let edges: FlowEdge[];
-      try {
-        nodes = JSON.parse(flow.nodes as string);
-        edges = JSON.parse(flow.edges as string);
-      } catch (parseError) {
-        console.error(`[FlowExecutor] Failed to parse flow data:`, parseError);
-        await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your message.');
-        return { success: false, error: 'Invalid flow data' };
-      }
-
-      // 3. Determine current node
-      let currentNode: FlowNode | null = session.currentNodeId
-        ? this.findNode(nodes, session.currentNodeId)
-        : this.findStartNode(nodes);
-
-      if (!currentNode) {
-        console.error(`[FlowExecutor] No start node found for bot: ${bot.id}`);
-        await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured correctly.');
-        return { success: false, error: 'No start node found' };
-      }
-
-      // Get context from session
-      const context: ExecutionContext = (session.context as ExecutionContext) || {};
-
-      // 4. Process incoming message (if waiting for input)
-      if (currentNode.type === 'userInput') {
-        const variableName = (currentNode.data as { variableName?: string }).variableName;
-        if (variableName) {
-          context[variableName] = message;
-        }
-        currentNode = this.getNextNode(nodes, edges, currentNode.id);
-      }
-
-      // 5. Execute nodes until we need user input or reach end
-      let nodeCount = 0;
-      const maxNodes = 100; // Prevent infinite loops
-
-      while (currentNode && currentNode.type !== 'userInput' && currentNode.type !== 'end') {
-        nodeCount++;
-        if (nodeCount > maxNodes) {
-          console.error(`[FlowExecutor] Max node execution limit reached for bot: ${bot.id}`);
-          await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your request.');
-          return { success: false, error: 'Max node limit reached' };
-        }
-
-        try {
-          await this.executeNode(currentNode, bot, senderId, context);
-        } catch (nodeError) {
-          console.error(`[FlowExecutor] Error executing node ${currentNode.id}:`, nodeError);
-          // Continue to next node instead of crashing
-        }
-
-        // Get next node (handle conditions)
-        if (currentNode.type === 'condition') {
-          currentNode = this.getNextNodeForCondition(nodes, edges, currentNode, context);
-        } else {
-          currentNode = this.getNextNode(nodes, edges, currentNode.id);
-        }
-      }
-
-      // 6. If we're at a userInput node, send the prompt
-      if (currentNode?.type === 'userInput') {
-        const prompt = (currentNode.data as { prompt?: string }).prompt;
-        if (prompt) {
-          await messengerService.sendText(bot, senderId, this.interpolate(prompt, context));
-        }
-      }
-
-      // 7. Update session
-      await this.updateSession(session.id, currentNode?.id || null, context);
-
-      // 8. Log message and update analytics
-      await this.logMessage(bot.id, senderId, message, 'incoming');
-
-      return { success: true };
+      // 6. Fall back to Flow-based execution (should rarely reach here)
+      console.log(`[FlowExecutor] Falling back to Flow-based execution for bot ${bot.id}`);
+      return this.executeFlowBased(bot, senderId, message, session, context);
     } catch (error) {
       console.error(`[FlowExecutor] Unexpected error:`, error);
       try {
@@ -132,6 +63,349 @@ export class FlowExecutorService {
       }
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
+  }
+
+  // Execute a Block (Chatfuel-style)
+  private async executeBlock(
+    bot: Bot,
+    senderId: string,
+    block: Block,
+    session: UserSession,
+    context: ExecutionContext
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const cards: BlockCard[] = JSON.parse(block.cards);
+
+      // Start from beginning or continue from where we left off
+      let cardIndex = session.currentBlockId === block.id ? session.currentCardIdx : 0;
+
+      // Execute cards sequentially
+      while (cardIndex < cards.length) {
+        const card = cards[cardIndex];
+
+        // Check if this card requires user input
+        if (card.type === 'userInput') {
+          // Send the prompt and wait for user response
+          const uiCard = card as UserInputCard;
+          await messengerService.sendText(bot, senderId, this.interpolate(uiCard.prompt, context));
+          await this.logMessage(bot.id, senderId, uiCard.prompt, 'outgoing');
+
+          // Save session state - waiting for input at this card
+          await this.updateBlockSession(session.id, block.id, cardIndex, context);
+          return { success: true };
+        }
+
+        // Execute the card
+        const result = await this.executeBlockCard(card, bot, senderId, context);
+
+        // If card redirects to another block, execute that block
+        if (result.goToBlockId) {
+          const nextBlock = await prisma.block.findUnique({ where: { id: result.goToBlockId } });
+          if (nextBlock) {
+            // Reset card index for new block
+            await this.updateBlockSession(session.id, null, 0, context);
+            return this.executeBlock(bot, senderId, nextBlock, session, context);
+          }
+        }
+
+        cardIndex++;
+      }
+
+      // Block execution complete - clear block state
+      await this.updateBlockSession(session.id, null, 0, context);
+      return { success: true };
+    } catch (error) {
+      console.error(`[FlowExecutor] Error executing block:`, error);
+      return { success: false, error: error instanceof Error ? error.message : 'Block execution error' };
+    }
+  }
+
+  // Continue Block execution after receiving user input
+  private async continueBlockExecution(
+    bot: Bot,
+    senderId: string,
+    message: string,
+    session: UserSession,
+    context: ExecutionContext
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const block = await prisma.block.findUnique({ where: { id: session.currentBlockId! } });
+      if (!block) {
+        // Block was deleted, reset session
+        await this.updateBlockSession(session.id, null, 0, context);
+        return { success: false, error: 'Block not found' };
+      }
+
+      const cards: BlockCard[] = JSON.parse(block.cards);
+      const currentCard = cards[session.currentCardIdx];
+
+      // Process the user input
+      if (currentCard && currentCard.type === 'userInput') {
+        const uiCard = currentCard as UserInputCard;
+        context[uiCard.variableName] = message;
+
+        // Log incoming message
+        await this.logMessage(bot.id, senderId, message, 'incoming');
+
+        // If there's a next block specified, go there
+        if (uiCard.nextBlockId) {
+          const nextBlock = await prisma.block.findUnique({ where: { id: uiCard.nextBlockId } });
+          if (nextBlock) {
+            await this.updateBlockSession(session.id, null, 0, context);
+            return this.executeBlock(bot, senderId, nextBlock, session, context);
+          }
+        }
+
+        // Otherwise continue with next card in current block
+        const nextCardIndex = session.currentCardIdx + 1;
+
+        // Continue executing remaining cards
+        for (let i = nextCardIndex; i < cards.length; i++) {
+          const card = cards[i];
+
+          if (card.type === 'userInput') {
+            const nextUiCard = card as UserInputCard;
+            await messengerService.sendText(bot, senderId, this.interpolate(nextUiCard.prompt, context));
+            await this.logMessage(bot.id, senderId, nextUiCard.prompt, 'outgoing');
+            await this.updateBlockSession(session.id, block.id, i, context);
+            return { success: true };
+          }
+
+          const result = await this.executeBlockCard(card, bot, senderId, context);
+
+          if (result.goToBlockId) {
+            const nextBlock = await prisma.block.findUnique({ where: { id: result.goToBlockId } });
+            if (nextBlock) {
+              await this.updateBlockSession(session.id, null, 0, context);
+              return this.executeBlock(bot, senderId, nextBlock, session, context);
+            }
+          }
+        }
+
+        // Block complete
+        await this.updateBlockSession(session.id, null, 0, context);
+        return { success: true };
+      }
+
+      return { success: false, error: 'Invalid session state' };
+    } catch (error) {
+      console.error(`[FlowExecutor] Error continuing block:`, error);
+      return { success: false, error: error instanceof Error ? error.message : 'Block continuation error' };
+    }
+  }
+
+  // Execute a single Block card
+  private async executeBlockCard(
+    card: BlockCard,
+    bot: Bot,
+    senderId: string,
+    context: ExecutionContext
+  ): Promise<{ goToBlockId?: string }> {
+    switch (card.type) {
+      case 'text': {
+        const textCard = card as TextCard;
+        const message = this.interpolate(textCard.text, context);
+        await messengerService.sendText(bot, senderId, message);
+        await this.logMessage(bot.id, senderId, message, 'outgoing');
+        break;
+      }
+
+      case 'image': {
+        const imageCard = card as ImageCard;
+        await messengerService.sendImage(bot, senderId, imageCard.imageUrl);
+        if (imageCard.caption) {
+          await messengerService.sendText(bot, senderId, this.interpolate(imageCard.caption, context));
+        }
+        await this.logMessage(bot.id, senderId, `[Image: ${imageCard.imageUrl}]`, 'outgoing');
+        break;
+      }
+
+      case 'gallery': {
+        const galleryCard = card as GalleryCard;
+        await messengerService.sendCard(bot, senderId, {
+          title: this.interpolate(galleryCard.title, context),
+          subtitle: galleryCard.subtitle ? this.interpolate(galleryCard.subtitle, context) : undefined,
+          imageUrl: galleryCard.imageUrl,
+          buttons: galleryCard.buttons.map(btn => ({
+            title: btn.title,
+            type: btn.type === 'url' ? 'url' : 'postback',
+            payload: btn.type === 'block' ? `BLOCK:${btn.blockId}` : btn.payload,
+            url: btn.url,
+          })),
+        });
+        await this.logMessage(bot.id, senderId, `[Card: ${galleryCard.title}]`, 'outgoing');
+        break;
+      }
+
+      case 'quickReply': {
+        const qrCard = card as QuickReplyCard;
+        await messengerService.sendQuickReplies(bot, senderId, {
+          message: this.interpolate(qrCard.text, context),
+          buttons: qrCard.buttons.map(btn => ({
+            title: btn.title,
+            payload: btn.blockId ? `BLOCK:${btn.blockId}` : btn.title,
+          })),
+        });
+        await this.logMessage(bot.id, senderId, qrCard.text, 'outgoing');
+        break;
+      }
+
+      case 'delay': {
+        const delayCard = card as DelayCard;
+        if (delayCard.showTyping) {
+          await messengerService.sendTypingIndicator(bot, senderId, true);
+        }
+        await this.sleep(delayCard.seconds * 1000);
+        if (delayCard.showTyping) {
+          await messengerService.sendTypingIndicator(bot, senderId, false);
+        }
+        break;
+      }
+
+      case 'goToBlock': {
+        const gotoCard = card as GoToBlockCard;
+        return { goToBlockId: gotoCard.blockId };
+      }
+    }
+
+    return {};
+  }
+
+  // Check if bot has any blocks configured
+  private async botHasBlocks(botId: string): Promise<boolean> {
+    const count = await prisma.block.count({ where: { botId } });
+    return count > 0;
+  }
+
+  // Update session for Block-based execution
+  private async updateBlockSession(
+    sessionId: string,
+    currentBlockId: string | null,
+    currentCardIdx: number,
+    context: ExecutionContext
+  ): Promise<void> {
+    await prisma.userSession.update({
+      where: { id: sessionId },
+      data: {
+        currentBlockId,
+        currentCardIdx,
+        currentNodeId: null, // Clear flow state when using blocks
+        context: JSON.stringify(context),
+      },
+    });
+  }
+
+  // Original Flow-based execution (fallback)
+  private async executeFlowBased(
+    bot: Bot,
+    senderId: string,
+    message: string,
+    session: UserSession,
+    context: ExecutionContext
+  ): Promise<{ success: boolean; error?: string }> {
+    // 2. Find flow - check for triggered flow first, then use default or continue session
+    let flow: Flow | null = null;
+    let shouldResetSession = false;
+
+    // Check if message matches any trigger keywords (only if not in the middle of a conversation)
+    if (!session.currentNodeId) {
+      flow = await this.findFlowByTrigger(bot.id, message);
+      if (flow) {
+        console.log(`[FlowExecutor] Triggered flow "${flow.name}" for keyword: ${message}`);
+        shouldResetSession = true;
+      }
+    }
+
+    // If no triggered flow, use the default flow
+    if (!flow) {
+      flow = await this.getDefaultFlow(bot.id);
+    }
+
+    if (!flow) {
+      console.error(`[FlowExecutor] No flow found for bot: ${bot.id}`);
+      await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured yet.');
+      return { success: false, error: 'No flow found' };
+    }
+
+    // Reset session if we're starting a new triggered flow
+    if (shouldResetSession) {
+      session = await this.resetSession(session.id);
+    }
+
+    // Parse nodes and edges with error handling
+    let nodes: FlowNode[];
+    let edges: FlowEdge[];
+    try {
+      nodes = JSON.parse(flow.nodes as string);
+      edges = JSON.parse(flow.edges as string);
+    } catch (parseError) {
+      console.error(`[FlowExecutor] Failed to parse flow data:`, parseError);
+      await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your message.');
+      return { success: false, error: 'Invalid flow data' };
+    }
+
+    // 3. Determine current node
+    let currentNode: FlowNode | null = session.currentNodeId
+      ? this.findNode(nodes, session.currentNodeId)
+      : this.findStartNode(nodes);
+
+    if (!currentNode) {
+      console.error(`[FlowExecutor] No start node found for bot: ${bot.id}`);
+      await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured correctly.');
+      return { success: false, error: 'No start node found' };
+    }
+
+    // 4. Process incoming message (if waiting for input)
+    if (currentNode.type === 'userInput') {
+      const variableName = (currentNode.data as { variableName?: string }).variableName;
+      if (variableName) {
+        context[variableName] = message;
+      }
+      currentNode = this.getNextNode(nodes, edges, currentNode.id);
+    }
+
+    // 5. Execute nodes until we need user input or reach end
+    let nodeCount = 0;
+    const maxNodes = 100; // Prevent infinite loops
+
+    while (currentNode && currentNode.type !== 'userInput' && currentNode.type !== 'end') {
+      nodeCount++;
+      if (nodeCount > maxNodes) {
+        console.error(`[FlowExecutor] Max node execution limit reached for bot: ${bot.id}`);
+        await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your request.');
+        return { success: false, error: 'Max node limit reached' };
+      }
+
+      try {
+        await this.executeNode(currentNode, bot, senderId, context);
+      } catch (nodeError) {
+        console.error(`[FlowExecutor] Error executing node ${currentNode.id}:`, nodeError);
+        // Continue to next node instead of crashing
+      }
+
+      // Get next node (handle conditions)
+      if (currentNode.type === 'condition') {
+        currentNode = this.getNextNodeForCondition(nodes, edges, currentNode, context);
+      } else {
+        currentNode = this.getNextNode(nodes, edges, currentNode.id);
+      }
+    }
+
+    // 6. If we're at a userInput node, send the prompt
+    if (currentNode?.type === 'userInput') {
+      const prompt = (currentNode.data as { prompt?: string }).prompt;
+      if (prompt) {
+        await messengerService.sendText(bot, senderId, this.interpolate(prompt, context));
+      }
+    }
+
+    // 7. Update session
+    await this.updateSession(session.id, currentNode?.id || null, context);
+
+    // 8. Log message and update analytics
+    await this.logMessage(bot.id, senderId, message, 'incoming');
+
+    return { success: true };
   }
 
   private async executeNode(
@@ -289,7 +563,7 @@ export class FlowExecutorService {
 
     if (!session) {
       session = await prisma.userSession.create({
-        data: { botId, senderId, context: {} },
+        data: { botId, senderId, context: JSON.stringify({}) },
       });
     }
 
@@ -303,7 +577,7 @@ export class FlowExecutorService {
   ): Promise<void> {
     await prisma.userSession.update({
       where: { id: sessionId },
-      data: { currentNodeId, context },
+      data: { currentNodeId, context: JSON.stringify(context) },
     });
   }
 
@@ -345,7 +619,7 @@ export class FlowExecutorService {
   private async resetSession(sessionId: string): Promise<UserSession> {
     return prisma.userSession.update({
       where: { id: sessionId },
-      data: { currentNodeId: null, context: {} },
+      data: { currentNodeId: null, currentBlockId: null, currentCardIdx: 0, context: JSON.stringify({}) },
     });
   }
 
@@ -355,9 +629,9 @@ export class FlowExecutorService {
     content: string,
     direction: 'incoming' | 'outgoing'
   ): Promise<void> {
-    // Update analytics first (before creating message) to check unique users
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Use UTC date for consistency with SQL Server
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
     // Check if this sender has already sent a message today (for unique user tracking)
     let isNewUserToday = false;
@@ -386,24 +660,69 @@ export class FlowExecutorService {
       },
     });
 
-    // Update analytics
-    await prisma.analytics.upsert({
-      where: { botId_date: { botId, date: today } },
-      create: {
-        botId,
-        date: today,
-        totalMessages: 1,
-        incomingMessages: direction === 'incoming' ? 1 : 0,
-        outgoingMessages: direction === 'outgoing' ? 1 : 0,
-        uniqueUsers: isNewUserToday ? 1 : 0,
-      },
-      update: {
-        totalMessages: { increment: 1 },
-        incomingMessages: direction === 'incoming' ? { increment: 1 } : undefined,
-        outgoingMessages: direction === 'outgoing' ? { increment: 1 } : undefined,
-        uniqueUsers: isNewUserToday ? { increment: 1 } : undefined,
-      },
+    // Update analytics - non-blocking, don't crash if it fails
+    this.updateAnalytics(botId, direction, isNewUserToday, today).catch((err) => {
+      console.error('[FlowExecutor] Analytics update failed (non-critical):', err.message);
     });
+  }
+
+  private async updateAnalytics(
+    botId: string,
+    direction: 'incoming' | 'outgoing',
+    isNewUserToday: boolean,
+    today: Date
+  ): Promise<void> {
+    // Try to find existing record first
+    const existing = await prisma.analytics.findUnique({
+      where: { botId_date: { botId, date: today } },
+    });
+
+    if (existing) {
+      // Update existing record
+      await prisma.analytics.update({
+        where: { id: existing.id },
+        data: {
+          totalMessages: { increment: 1 },
+          incomingMessages: direction === 'incoming' ? { increment: 1 } : undefined,
+          outgoingMessages: direction === 'outgoing' ? { increment: 1 } : undefined,
+          uniqueUsers: isNewUserToday ? { increment: 1 } : undefined,
+        },
+      });
+    } else {
+      // Create new record
+      try {
+        await prisma.analytics.create({
+          data: {
+            botId,
+            date: today,
+            totalMessages: 1,
+            incomingMessages: direction === 'incoming' ? 1 : 0,
+            outgoingMessages: direction === 'outgoing' ? 1 : 0,
+            uniqueUsers: isNewUserToday ? 1 : 0,
+          },
+        });
+      } catch (error: unknown) {
+        // If create fails due to race condition, try update
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+          const record = await prisma.analytics.findUnique({
+            where: { botId_date: { botId, date: today } },
+          });
+          if (record) {
+            await prisma.analytics.update({
+              where: { id: record.id },
+              data: {
+                totalMessages: { increment: 1 },
+                incomingMessages: direction === 'incoming' ? { increment: 1 } : undefined,
+                outgoingMessages: direction === 'outgoing' ? { increment: 1 } : undefined,
+                uniqueUsers: isNewUserToday ? { increment: 1 } : undefined,
+              },
+            });
+          }
+        } else {
+          throw error;
+        }
+      }
+    }
   }
 
   private sleep(ms: number): Promise<void> {
