@@ -242,7 +242,10 @@ export function MainLayout({ children }: MainLayoutProps) {
           {/* User */}
           <div className="px-3 py-4 border-t border-slate-700">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <Link
+                to="/profile"
+                className="flex items-center gap-3 hover:bg-slate-700 rounded-lg p-1 -m-1 transition-colors"
+              >
                 {user?.profilePic ? (
                   <img
                     src={user.profilePic}
@@ -260,7 +263,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                   <p className="text-sm font-medium text-white truncate">{user?.name}</p>
                   <p className="text-xs text-slate-400 truncate">{user?.email}</p>
                 </div>
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg"

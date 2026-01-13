@@ -13,6 +13,7 @@ interface RegisterInput {
 interface LoginInput {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 interface FacebookProfile {
@@ -35,6 +36,16 @@ interface FacebookPage {
       url?: string;
     };
   };
+}
+
+interface UpdateProfileInput {
+  name?: string;
+  profilePic?: string;
+}
+
+interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export class AuthService {
@@ -89,7 +100,8 @@ export class AuthService {
       throw new AppError('Invalid email or password', 401);
     }
 
-    const token = this.generateToken(user.id);
+    // Generate token with appropriate expiration based on rememberMe
+    const token = this.generateToken(user.id, input.rememberMe);
 
     return {
       user: {
@@ -285,8 +297,70 @@ export class AuthService {
     return data.access_token || pageAccessToken;
   }
 
-  private generateToken(userId: string): string {
-    return jwt.sign({ userId }, env.JWT_SECRET, { expiresIn: '7d' });
+  async updateProfile(userId: string, input: UpdateProfileInput) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: input.name ?? user.name,
+        profilePic: input.profilePic ?? user.profilePic,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        profilePic: true,
+        facebookId: true,
+        createdAt: true,
+      },
+    });
+
+    return updatedUser;
+  }
+
+  async changePassword(userId: string, input: ChangePasswordInput) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Facebook-only users cannot change password
+    if (!user.password) {
+      throw new AppError('Cannot change password for Facebook-linked accounts', 400);
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(input.currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new AppError('Current password is incorrect', 401);
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(input.newPassword, 12);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    return { success: true };
+  }
+
+  private generateToken(userId: string, rememberMe: boolean = true): string {
+    // If rememberMe is true, token expires in 30 days
+    // If rememberMe is false, token expires in 1 day (session-like)
+    const expiresIn = rememberMe ? '30d' : '1d';
+    return jwt.sign({ userId }, env.JWT_SECRET, { expiresIn });
   }
 }
 

@@ -13,6 +13,7 @@ export const loginSchema = z.object({
   body: z.object({
     email: z.string().email('Invalid email format'),
     password: z.string().min(1, 'Password is required'),
+    rememberMe: z.boolean().optional().default(true),
   }),
 });
 
@@ -143,5 +144,20 @@ export const blockIdSchema = z.object({
   params: z.object({
     botId: z.string().uuid('Invalid bot ID'),
     blockId: z.string().uuid('Invalid block ID'),
+  }),
+});
+
+// Profile schemas
+export const updateProfileSchema = z.object({
+  body: z.object({
+    name: z.string().min(1, 'Name is required').max(100, 'Name too long').optional(),
+    profilePic: z.string().optional(),
+  }),
+});
+
+export const changePasswordSchema = z.object({
+  body: z.object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
   }),
 });

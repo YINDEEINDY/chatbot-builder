@@ -46,8 +46,8 @@ export class AuthController {
 
   async login(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, password } = req.body;
-      const result = await authService.login({ email, password });
+      const { email, password, rememberMe } = req.body;
+      const result = await authService.login({ email, password, rememberMe });
 
       res.json({
         success: true,
@@ -387,6 +387,36 @@ export class AuthController {
           facebookPageName: null,
           isActive: false,
         },
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Update user profile
+  async updateProfile(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { name, profilePic } = req.body;
+      const user = await authService.updateProfile(req.userId!, { name, profilePic });
+
+      res.json({
+        success: true,
+        data: user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Change password
+  async changePassword(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      await authService.changePassword(req.userId!, { currentPassword, newPassword });
+
+      res.json({
+        success: true,
+        message: 'Password changed successfully',
       });
     } catch (error) {
       next(error);

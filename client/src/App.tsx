@@ -20,6 +20,7 @@ import { GrowPage } from './pages/GrowPage';
 import { AnalyzePage } from './pages/AnalyzePage';
 import { ConfigurePage } from './pages/ConfigurePage';
 import { KeywordsPage } from './pages/KeywordsPage';
+import { ProfilePage } from './pages/ProfilePage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -206,6 +207,14 @@ function App() {
           element={
             <PrivateRoute>
               <DashboardPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <ProfilePage />
             </PrivateRoute>
           }
         />

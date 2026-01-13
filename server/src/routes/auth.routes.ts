@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authController } from '../controllers/auth.controller.js';
 import { auth } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
-import { registerSchema, loginSchema } from '../schemas/index.js';
+import { registerSchema, loginSchema, updateProfileSchema, changePasswordSchema } from '../schemas/index.js';
 
 const router = Router();
 
@@ -22,5 +22,9 @@ router.get('/facebook/pages/callback', authController.facebookPagesCallback.bind
 router.get('/facebook/pages/session/:sessionId', auth, authController.getFacebookPagesFromSession.bind(authController));
 router.post('/facebook/pages/:botId/connect', auth, authController.connectFacebookPage.bind(authController));
 router.delete('/facebook/pages/:botId/disconnect', auth, authController.disconnectFacebookPage.bind(authController));
+
+// Profile routes
+router.put('/profile', auth, validate(updateProfileSchema), authController.updateProfile.bind(authController));
+router.post('/profile/change-password', auth, validate(changePasswordSchema), authController.changePassword.bind(authController));
 
 export default router;

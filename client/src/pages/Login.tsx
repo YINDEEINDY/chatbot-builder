@@ -16,6 +16,7 @@ const FacebookIcon = () => (
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFacebookLoading, setIsFacebookLoading] = useState(false);
@@ -38,7 +39,7 @@ export function LoginPage() {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      await login(email, password, rememberMe);
       navigate('/dashboard');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -133,6 +134,19 @@ export function LoginPage() {
               placeholder="********"
               required
             />
+
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-600">
+                Remember me for 30 days
+              </label>
+            </div>
 
             <Button type="submit" className="w-full" isLoading={isLoading}>
               Sign In
