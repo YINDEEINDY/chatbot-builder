@@ -8,15 +8,18 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  email      String   @unique
-  password   String?  // Optional for Facebook-only users
-  name       String
-  facebookId String?  // Facebook User ID
-  profilePic String?  // Profile picture URL
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  bots       Bot[]
+  id                  String   @id @default(uuid())
+  email               String   @unique
+  password            String?  // Optional for Facebook-only users
+  name                String
+  facebookId          String?  // Facebook User ID
+  profilePic          String?  // Profile picture URL
+  notifyNewMessages   Boolean  @default(true)  // Email for new messages
+  notifyDailySummary  Boolean  @default(false) // Daily summary email
+  notifyBotErrors     Boolean  @default(true)  // Alert on bot errors
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  bots                Bot[]
 
   @@index([facebookId])
 }

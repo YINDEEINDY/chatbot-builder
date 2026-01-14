@@ -3,6 +3,7 @@ import { useFlowStore } from '../../stores/flow.store';
 import type { NodeData, NodeType, QuickReplyButton, CardButton } from '../../types';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
+import { ImageUploader } from '../ui/ImageUploader';
 import { X, Plus, Trash2, ExternalLink, MousePointerClick } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -61,12 +62,14 @@ export function NodePropertiesPanel({ node, onClose }: NodePropertiesPanelProps)
       case 'image':
         return (
           <div className="space-y-4">
-            <Input
-              label="Image URL"
-              value={(data as { imageUrl?: string }).imageUrl || ''}
-              onChange={(e) => handleChange('imageUrl', e.target.value)}
-              placeholder="https://example.com/image.jpg"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Image</label>
+              <ImageUploader
+                value={(data as { imageUrl?: string }).imageUrl || ''}
+                onChange={(url) => handleChange('imageUrl', url)}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
             <Input
               label="Caption (optional)"
               value={(data as { caption?: string }).caption || ''}
@@ -80,12 +83,14 @@ export function NodePropertiesPanel({ node, onClose }: NodePropertiesPanelProps)
         const cardData = data as { title?: string; subtitle?: string; imageUrl?: string; buttons?: CardButton[] };
         return (
           <div className="space-y-4">
-            <Input
-              label="Image URL"
-              value={cardData.imageUrl || ''}
-              onChange={(e) => handleChange('imageUrl', e.target.value)}
-              placeholder="https://example.com/image.jpg"
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Card Image</label>
+              <ImageUploader
+                value={cardData.imageUrl || ''}
+                onChange={(url) => handleChange('imageUrl', url)}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
             <Input
               label="Title"
               value={cardData.title || ''}

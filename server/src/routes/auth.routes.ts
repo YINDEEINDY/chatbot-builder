@@ -27,4 +27,8 @@ router.delete('/facebook/pages/:botId/disconnect', auth, authController.disconne
 router.put('/profile', auth, validate(updateProfileSchema), authController.updateProfile.bind(authController));
 router.post('/profile/change-password', auth, validate(changePasswordSchema), authController.changePassword.bind(authController));
 
+// Notification settings routes
+router.get('/notifications', auth, authController.getNotificationSettings.bind(authController));
+router.put('/notifications', auth, authController.updateNotificationSettings.bind(authController));
+
 export default router;

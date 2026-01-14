@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js';
 import { AppError } from '../middlewares/errorHandler.js';
 import { Contact } from '@prisma/client';
+import { schedulerService } from './scheduler.service.js';
 
 interface BroadcastMessage {
   type: 'text' | 'image' | 'card';
@@ -164,6 +165,11 @@ class BroadcastService {
       throw new AppError('Cannot delete a broadcast that is currently sending', 400);
     }
 
+    // Cancel any scheduled job
+    if (broadcast.status === 'scheduled') {
+      schedulerService.cancelJob(broadcastId);
+    }
+
     await prisma.broadcast.delete({ where: { id: broadcastId } });
     return { message: 'Broadcast deleted successfully' };
   }
@@ -252,10 +258,19 @@ class BroadcastService {
       throw new AppError('Scheduled time must be in the future', 400);
     }
 
-    return prisma.broadcast.update({
+    // Update database
+    const updatedBroadcast = await prisma.broadcast.update({
       where: { id: broadcastId },
       data: { status: 'scheduled', scheduledAt },
     });
+
+    // Register with scheduler service
+    schedulerService.scheduleBroadcast(broadcastId, botId, scheduledAt, async () => {
+      // This callback is called by the scheduler when it's time to send
+      // The scheduler service handles the actual sending
+    });
+
+    return updatedBroadcast;
   }
 
   private async calculateTargetCount(botId: string, filter?: TargetFilter): Promise<number> {

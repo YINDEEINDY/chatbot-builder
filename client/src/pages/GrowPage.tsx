@@ -1,6 +1,7 @@
 import { MainLayout } from '../components/layout/MainLayout';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
+import { QRCodeDisplay } from '../components/ui/QRCode';
 import { useBotStore } from '../stores/bot.store';
 import {
   Link2,
@@ -183,18 +184,11 @@ export function GrowPage() {
                 {tool.id === 'qr-code' && (
                   <div className="space-y-3">
                     {messengerLink ? (
-                      <div className="flex items-center gap-4">
-                        <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-                          <QrCode className="w-16 h-16 text-gray-400" />
-                        </div>
-                        <div className="space-y-2">
-                          <Button size="sm" variant="secondary" disabled>
-                            Download PNG
-                          </Button>
-                          <Button size="sm" variant="secondary" disabled>
-                            Download SVG
-                          </Button>
-                          <p className="text-xs text-gray-500">QR generation coming soon</p>
+                      <div className="flex items-start gap-4">
+                        <QRCodeDisplay value={messengerLink} size={128} />
+                        <div className="text-sm text-gray-500 mt-2">
+                          <p className="font-medium text-gray-700 mb-1">Scan to chat</p>
+                          <p>Users can scan this QR code with their phone camera to start a conversation with your bot.</p>
                         </div>
                       </div>
                     ) : (

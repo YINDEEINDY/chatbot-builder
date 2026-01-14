@@ -8,6 +8,13 @@ export interface User {
   createdAt: string;
 }
 
+// Notification settings
+export interface NotificationSettings {
+  notifyNewMessages: boolean;
+  notifyDailySummary: boolean;
+  notifyBotErrors: boolean;
+}
+
 // Bot types
 export interface Bot {
   id: string;

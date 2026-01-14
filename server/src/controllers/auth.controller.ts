@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/auth.service.js';
+import { notificationService } from '../services/notification.service.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { env } from '../config/env.js';
 import { prisma } from '../config/db.js';
@@ -417,6 +418,39 @@ export class AuthController {
       res.json({
         success: true,
         message: 'Password changed successfully',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Get notification settings
+  async getNotificationSettings(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const settings = await notificationService.getNotificationSettings(req.userId!);
+
+      res.json({
+        success: true,
+        data: settings,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Update notification settings
+  async updateNotificationSettings(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { notifyNewMessages, notifyDailySummary, notifyBotErrors } = req.body;
+      const settings = await notificationService.updateNotificationSettings(req.userId!, {
+        notifyNewMessages,
+        notifyDailySummary,
+        notifyBotErrors,
+      });
+
+      res.json({
+        success: true,
+        data: settings,
       });
     } catch (error) {
       next(error);

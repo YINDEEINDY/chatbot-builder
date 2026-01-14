@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ApiResponse, User } from '../types';
+import type { ApiResponse, User, NotificationSettings } from '../types';
 
 interface UpdateProfileData {
   name?: string;
@@ -19,6 +19,16 @@ export const profileApi = {
 
   changePassword: async (data: ChangePasswordData) => {
     const response = await apiClient.post<ApiResponse<{ message: string }>>('/auth/profile/change-password', data);
+    return response.data;
+  },
+
+  getNotificationSettings: async () => {
+    const response = await apiClient.get<ApiResponse<NotificationSettings>>('/auth/notifications');
+    return response.data;
+  },
+
+  updateNotificationSettings: async (settings: Partial<NotificationSettings>) => {
+    const response = await apiClient.put<ApiResponse<NotificationSettings>>('/auth/notifications', settings);
     return response.data;
   },
 };

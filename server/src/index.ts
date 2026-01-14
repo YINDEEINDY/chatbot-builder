@@ -1,11 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import path from 'path';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { env } from './config/env.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+import { schedulerService } from './services/scheduler.service.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -57,6 +59,10 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(morgan('dev'));
 
+// Serve static files from uploads directory
+const uploadsPath = path.resolve(env.UPLOAD_DIR);
+app.use('/uploads', express.static(uploadsPath));
+
 // Health check
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -69,8 +75,11 @@ app.use('/api', routes);
 app.use(errorHandler);
 
 // Start server
-httpServer.listen(env.PORT, () => {
+httpServer.listen(env.PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${env.PORT}`);
   console.log(`📚 API available at http://localhost:${env.PORT}/api`);
   console.log(`🔌 Socket.IO enabled`);
+
+  // Initialize scheduler service for broadcast scheduling
+  await schedulerService.init();
 });

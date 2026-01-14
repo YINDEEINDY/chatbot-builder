@@ -6,6 +6,8 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useBotStore } from '../stores/bot.store';
 import { authApi } from '../api/auth';
+import { profileApi } from '../api/profile';
+import type { NotificationSettings } from '../types';
 import {
   Settings,
   Facebook,
@@ -52,6 +54,14 @@ export function ConfigurePage() {
   const [pageSessionId, setPageSessionId] = useState<string | null>(null);
   const [loadingPages, setLoadingPages] = useState(false);
 
+  // Notification settings state
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
+    notifyNewMessages: true,
+    notifyDailySummary: false,
+    notifyBotErrors: true,
+  });
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+
   useEffect(() => {
     if (currentBot) {
       setFormData({
@@ -60,6 +70,23 @@ export function ConfigurePage() {
       });
     }
   }, [currentBot]);
+
+  // Fetch notification settings on mount
+  useEffect(() => {
+    const fetchNotificationSettings = async () => {
+      try {
+        const response = await profileApi.getNotificationSettings();
+        if (response.success && response.data) {
+          setNotificationSettings(response.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch notification settings:', err);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+    fetchNotificationSettings();
+  }, []);
 
   // Check for pageSession or error in URL
   useEffect(() => {
@@ -181,6 +208,18 @@ export function ConfigurePage() {
       setError(err.response?.data?.message || err.message || 'Failed to update bot status');
     } finally {
       setIsTogglingActive(false);
+    }
+  };
+
+  const handleNotificationChange = async (key: keyof NotificationSettings, value: boolean) => {
+    const newSettings = { ...notificationSettings, [key]: value };
+    setNotificationSettings(newSettings);
+    try {
+      await profileApi.updateNotificationSettings({ [key]: value });
+    } catch (err) {
+      // Revert on error
+      setNotificationSettings(notificationSettings);
+      console.error('Failed to update notification settings:', err);
     }
   };
 
@@ -442,31 +481,42 @@ export function ConfigurePage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  defaultChecked
-                />
-                <span className="text-gray-700">Email notifications for new messages</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                <span className="text-gray-700">Daily summary email</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                  defaultChecked
-                />
-                <span className="text-gray-700">Alert when bot encounters an error</span>
-              </label>
-            </div>
+            {loadingNotifications ? (
+              <div className="flex items-center gap-2 text-gray-500">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Loading notification settings...</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    checked={notificationSettings.notifyNewMessages}
+                    onChange={(e) => handleNotificationChange('notifyNewMessages', e.target.checked)}
+                  />
+                  <span className="text-gray-700">Email notifications for new messages</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    checked={notificationSettings.notifyDailySummary}
+                    onChange={(e) => handleNotificationChange('notifyDailySummary', e.target.checked)}
+                  />
+                  <span className="text-gray-700">Daily summary email</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                    checked={notificationSettings.notifyBotErrors}
+                    onChange={(e) => handleNotificationChange('notifyBotErrors', e.target.checked)}
+                  />
+                  <span className="text-gray-700">Alert when bot encounters an error</span>
+                </label>
+              </div>
+            )}
           </CardContent>
         </Card>
 
