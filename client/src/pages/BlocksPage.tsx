@@ -350,7 +350,6 @@ export function BlocksPage() {
   // Render block item in list
   const renderBlockItem = (block: Block, isSpecial?: boolean) => {
     const isSelected = selectedBlockId === block.id;
-    const cardCount = parseCards(block.cards).length;
 
     return (
       <button

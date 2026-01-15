@@ -52,7 +52,7 @@ const isRemembered = (): boolean => {
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: PREVIEW_MODE ? { id: 'preview', email: 'preview@test.com', name: 'Preview User' } : null,
+  user: PREVIEW_MODE ? { id: 'preview', email: 'preview@test.com', name: 'Preview User', createdAt: new Date().toISOString() } : null,
   token: getStoredToken(),
   // Start with isLoading: true if there's a token, so PrivateRoute shows loading spinner
   // until loadUser() completes (prevents redirect race condition)

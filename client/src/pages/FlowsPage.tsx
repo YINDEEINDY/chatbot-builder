@@ -4,7 +4,6 @@ import { MainLayout } from '../components/layout/MainLayout';
 import { Card, CardContent } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useFlowStore } from '../stores/flow.store';
-import { Flow } from '../types';
 import {
   Workflow,
   Plus,
@@ -12,7 +11,6 @@ import {
   Trash2,
   Copy,
   Loader2,
-  MoreVertical,
 } from 'lucide-react';
 
 export function FlowsPage() {

@@ -4,7 +4,7 @@ import { MainLayout } from '../components/layout/MainLayout';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Hash, Plus, Trash2, Edit2, Save, X, MessageSquare } from 'lucide-react';
+import { Hash, Plus, Trash2, Save, X, MessageSquare } from 'lucide-react';
 import { blocksApi } from '../api/blocks';
 import { Block } from '../types';
 
@@ -35,13 +35,13 @@ export function KeywordsPage() {
     setIsLoading(true);
     try {
       // Load blocks
-      const blocksResponse = await blocksApi.getBlocks(botId!);
+      const blocksResponse = await blocksApi.list(botId!);
       if (blocksResponse.success && blocksResponse.data) {
         setBlocks(blocksResponse.data);
 
         // Extract keywords from blocks
         const extractedKeywords: Keyword[] = [];
-        blocksResponse.data.forEach((block) => {
+        blocksResponse.data.forEach((block: Block) => {
           try {
             const triggers = JSON.parse(block.triggers || '[]');
             triggers.forEach((trigger: string, index: number) => {
@@ -75,8 +75,8 @@ export function KeywordsPage() {
       const currentTriggers = JSON.parse(block.triggers || '[]');
       const updatedTriggers = [...currentTriggers, newKeyword.trim()];
 
-      await blocksApi.updateBlock(botId!, block.id, {
-        triggers: JSON.stringify(updatedTriggers),
+      await blocksApi.update(botId!, block.id, {
+        triggers: updatedTriggers,
       });
 
       await loadData();
@@ -96,8 +96,8 @@ export function KeywordsPage() {
       const currentTriggers = JSON.parse(block.triggers || '[]');
       const updatedTriggers = currentTriggers.filter((t: string) => t !== keyword.keyword);
 
-      await blocksApi.updateBlock(botId!, block.id, {
-        triggers: JSON.stringify(updatedTriggers),
+      await blocksApi.update(botId!, block.id, {
+        triggers: updatedTriggers,
       });
 
       await loadData();
