@@ -37,11 +37,14 @@ export function RegisterPage() {
       await register(email, password, name);
       navigate('/dashboard');
     } catch (err: unknown) {
-      if (err instanceof Error) {
+      // Handle axios error with response data
+      const axiosError = err as { response?: { data?: { message?: string } } };
+      if (axiosError.response?.data?.message) {
+        setError(axiosError.response.data.message);
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        const error = err as { response?: { data?: { message?: string } } };
-        setError(error.response?.data?.message || 'Registration failed');
+        setError('Registration failed');
       }
     } finally {
       setIsLoading(false);
