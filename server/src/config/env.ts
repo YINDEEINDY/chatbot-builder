@@ -20,6 +20,10 @@ export const env = {
 
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
 
+  // Supabase configuration
+  SUPABASE_URL: process.env.SUPABASE_URL || '',
+  SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY || '',
+
   // Upload configuration
   UPLOAD_DIR: process.env.UPLOAD_DIR || './uploads',
   PUBLIC_URL: process.env.PUBLIC_URL || 'http://localhost:3001',

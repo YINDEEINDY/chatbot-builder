@@ -1,8 +1,6 @@
-import fs from 'fs';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { env } from '../config/env.js';
 import { AppError } from '../middlewares/errorHandler.js';
+import { uploadToSupabase, deleteFromSupabase } from '../config/supabase.js';
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -22,19 +20,6 @@ interface UploadResult {
 }
 
 class UploadService {
-  private uploadDir: string;
-
-  constructor() {
-    this.uploadDir = path.resolve(env.UPLOAD_DIR);
-    this.ensureUploadDir();
-  }
-
-  private ensureUploadDir() {
-    if (!fs.existsSync(this.uploadDir)) {
-      fs.mkdirSync(this.uploadDir, { recursive: true });
-    }
-  }
-
   async uploadFile(file: Express.Multer.File): Promise<UploadResult> {
     if (!file) {
       throw new AppError('No file provided', 400);
@@ -57,12 +42,13 @@ class UploadService {
     const ext = this.getExtension(file.mimetype);
     const id = uuidv4();
     const filename = `${id}${ext}`;
-    const filepath = path.join(this.uploadDir, filename);
 
-    // Write file to disk
-    fs.writeFileSync(filepath, file.buffer);
+    // Upload to Supabase Storage
+    const url = await uploadToSupabase(file.buffer, filename, file.mimetype);
 
-    const url = `${env.PUBLIC_URL}/uploads/${filename}`;
+    if (!url) {
+      throw new AppError('Failed to upload file to storage', 500);
+    }
 
     return {
       id,
@@ -74,12 +60,15 @@ class UploadService {
   }
 
   async deleteFile(fileId: string): Promise<void> {
-    const files = fs.readdirSync(this.uploadDir);
-    const matchingFile = files.find((f) => f.startsWith(fileId));
+    // Try to delete with common extensions
+    const extensions = ['.jpg', '.png', '.gif', '.webp'];
 
-    if (matchingFile) {
-      const filepath = path.join(this.uploadDir, matchingFile);
-      fs.unlinkSync(filepath);
+    for (const ext of extensions) {
+      const filename = `${fileId}${ext}`;
+      const success = await deleteFromSupabase(filename);
+      if (success) {
+        return;
+      }
     }
   }
 

@@ -21,6 +21,8 @@ import { AnalyzePage } from './pages/AnalyzePage';
 import { ConfigurePage } from './pages/ConfigurePage';
 import { KeywordsPage } from './pages/KeywordsPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -88,6 +90,10 @@ function App() {
 
         {/* OAuth callback - no auth check needed */}
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
+        {/* Public pages - no auth required */}
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
 
         {/* Private routes */}
         <Route

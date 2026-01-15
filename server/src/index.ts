@@ -12,11 +12,17 @@ import { schedulerService } from './services/scheduler.service.js';
 const app = express();
 const httpServer = createServer(app);
 
+// CORS configuration
+const corsOrigins = env.NODE_ENV === 'production'
+  ? [env.CLIENT_URL]
+  : ['http://localhost:5173', 'http://localhost:3000', env.CLIENT_URL];
+
 // Initialize Socket.IO
 export const io = new Server(httpServer, {
   cors: {
-    origin: '*',
+    origin: corsOrigins,
     methods: ['GET', 'POST'],
+    credentials: true,
   },
 });
 
@@ -54,7 +60,10 @@ io.on('connection', (socket) => {
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: corsOrigins,
+  credentials: true,
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(morgan('dev'));

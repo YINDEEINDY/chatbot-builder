@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlserver"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -52,9 +52,9 @@ model Flow {
   name      String
   botId     String
   bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
-  nodes     String   @default("[]") @db.NVarChar(Max)
-  edges     String   @default("[]") @db.NVarChar(Max)
-  triggers  String   @default("[]") @db.NVarChar(Max) // Keywords/phrases that trigger this flow
+  nodes     String   @default("[]") @db.Text
+  edges     String   @default("[]") @db.Text
+  triggers  String   @default("[]") @db.Text // Keywords/phrases that trigger this flow
   isDefault Boolean  @default(false)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -69,7 +69,7 @@ model UserSession {
   currentNodeId  String?  // For Flow-based execution
   currentBlockId String?  // For Block-based execution
   currentCardIdx Int      @default(0) // Current card index within the block
-  context        String   @default("{}") @db.NVarChar(Max)
+  context        String   @default("{}") @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -110,8 +110,8 @@ model Block {
   isWelcome       Boolean  @default(false) // Welcome Message - first block user sees
   isDefaultAnswer Boolean  @default(false) // Default Answer - when bot doesn't understand
   isEnabled       Boolean  @default(true)  // Whether this block is active
-  cards           String   @default("[]") @db.NVarChar(Max) // JSON array of cards/messages
-  triggers        String   @default("[]") @db.NVarChar(Max) // Keywords that trigger this block
+  cards           String   @default("[]") @db.Text // JSON array of cards/messages
+  triggers        String   @default("[]") @db.Text // Keywords that trigger this block
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -126,7 +126,7 @@ model Contact {
   profilePic           String?
   lastSeenAt           DateTime               @default(now())
   messageCount         Int                    @default(0)
-  tags                 String                 @default("[]") @db.NVarChar(Max) // JSON array of tags
+  tags                 String                 @default("[]") @db.Text // JSON array of tags
   isSubscribed         Boolean                @default(true)
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
@@ -142,12 +142,12 @@ model Broadcast {
   botId        String
   bot          Bot                  @relation(fields: [botId], references: [id], onDelete: Cascade)
   name         String
-  message      String               @db.NVarChar(Max) // JSON message structure
+  message      String               @db.Text // JSON message structure
   messageType  String               @default("text") // text, image, card
   status       String               @default("draft") // draft, scheduled, sending, sent, failed
   scheduledAt  DateTime?
   sentAt       DateTime?
-  targetFilter String               @default("{}") @db.NVarChar(Max) // JSON filter criteria
+  targetFilter String               @default("{}") @db.Text // JSON filter criteria
   totalTargets Int                  @default(0)
   sentCount    Int                  @default(0)
   failedCount  Int                  @default(0)
@@ -160,9 +160,9 @@ model Broadcast {
 model BroadcastRecipient {
   id          String    @id @default(uuid())
   broadcastId String
-  broadcast   Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  broadcast   Broadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
   contactId   String
-  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
   status      String    @default("pending") // pending, sent, failed
   sentAt      DateTime?
   error       String?
@@ -174,9 +174,9 @@ model BroadcastRecipient {
 model Conversation {
   id              String    @id @default(uuid())
   botId           String
-  bot             Bot       @relation(fields: [botId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  bot             Bot       @relation(fields: [botId], references: [id], onDelete: Cascade)
   contactId       String    @unique
-  contact         Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  contact         Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
   status          String    @default("bot") // bot, human, closed
   assignedTo      String?   // User ID of assigned agent
   unreadCount     Int       @default(0)
