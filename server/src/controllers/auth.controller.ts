@@ -237,7 +237,7 @@ export class AuthController {
   // Get Facebook Pages from session
   async getFacebookPagesFromSession(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { sessionId } = req.params;
+      const sessionId = req.params.sessionId as string;
 
       const session = facebookPagesSessionStore.get(sessionId);
       if (!session) {
@@ -279,7 +279,7 @@ export class AuthController {
   // Connect a Facebook Page to a bot
   async connectFacebookPage(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { botId } = req.params;
+      const botId = req.params.botId as string;
       const { sessionId, pageId } = req.body;
 
       if (!sessionId || !pageId) {
@@ -354,7 +354,7 @@ export class AuthController {
   // Disconnect Facebook Page from bot
   async disconnectFacebookPage(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { botId } = req.params;
+      const botId = req.params.botId as string;
 
       // Verify user owns this bot
       const bot = await prisma.bot.findFirst({

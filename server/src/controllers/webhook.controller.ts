@@ -33,7 +33,7 @@ interface WebhookBody {
 export class WebhookController {
   // Webhook verification (GET)
   async verify(req: Request, res: Response, _next: NextFunction) {
-    const botId = req.params.botId;
+    const botId = req.params.botId as string;
     const mode = req.query['hub.mode'];
     const token = req.query['hub.verify_token'];
     const challenge = req.query['hub.challenge'];
@@ -61,7 +61,7 @@ export class WebhookController {
 
   // Receive messages (POST)
   async receive(req: Request, res: Response, _next: NextFunction) {
-    const botId = req.params.botId;
+    const botId = req.params.botId as string;
     const body: WebhookBody = req.body;
 
     // Verify this is a page subscription

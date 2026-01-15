@@ -5,7 +5,7 @@ import { AuthRequest } from '../middlewares/auth.js';
 export class FlowController {
   async listFlows(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const flows = await flowService.listFlows(req.params.botId, req.userId!);
+      const flows = await flowService.listFlows(req.params.botId as string, req.userId!);
 
       res.json({
         success: true,
@@ -19,8 +19,8 @@ export class FlowController {
   async getFlow(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const flow = await flowService.getFlow(
-        req.params.flowId,
-        req.params.botId,
+        req.params.flowId as string,
+        req.params.botId as string,
         req.userId!
       );
 
@@ -36,7 +36,7 @@ export class FlowController {
   async createFlow(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { name } = req.body;
-      const flow = await flowService.createFlow(req.params.botId, req.userId!, { name });
+      const flow = await flowService.createFlow(req.params.botId as string, req.userId!, { name });
 
       res.status(201).json({
         success: true,
@@ -51,8 +51,8 @@ export class FlowController {
     try {
       const { name, nodes, edges, isActive } = req.body;
       const flow = await flowService.updateFlow(
-        req.params.flowId,
-        req.params.botId,
+        req.params.flowId as string,
+        req.params.botId as string,
         req.userId!,
         { name, nodes, edges, isActive }
       );
@@ -69,8 +69,8 @@ export class FlowController {
   async deleteFlow(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const result = await flowService.deleteFlow(
-        req.params.flowId,
-        req.params.botId,
+        req.params.flowId as string,
+        req.params.botId as string,
         req.userId!
       );
 
@@ -86,8 +86,8 @@ export class FlowController {
   async setDefaultFlow(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const flow = await flowService.setDefaultFlow(
-        req.params.flowId,
-        req.params.botId,
+        req.params.flowId as string,
+        req.params.botId as string,
         req.userId!
       );
 
@@ -103,8 +103,8 @@ export class FlowController {
   async duplicateFlow(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const flow = await flowService.duplicateFlow(
-        req.params.flowId,
-        req.params.botId,
+        req.params.flowId as string,
+        req.params.botId as string,
         req.userId!
       );
 

@@ -38,6 +38,20 @@ interface FacebookPage {
   };
 }
 
+interface FacebookTokenResponse {
+  access_token?: string;
+  error?: {
+    message: string;
+  };
+}
+
+interface FacebookPagesResponse {
+  data?: FacebookPage[];
+  error?: {
+    message: string;
+  };
+}
+
 interface UpdateProfileInput {
   name?: string;
   profilePic?: string;
@@ -125,7 +139,7 @@ export class AuthService {
       throw new AppError('Failed to fetch Facebook profile', 401);
     }
 
-    const profile: FacebookProfile = await profileResponse.json();
+    const profile = await profileResponse.json() as FacebookProfile;
 
     if (!profile.id) {
       throw new AppError('Invalid Facebook profile', 401);
@@ -195,14 +209,14 @@ export class AuthService {
     const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(env.FACEBOOK_REDIRECT_URI)}&client_secret=${env.FACEBOOK_APP_SECRET}&code=${code}`;
 
     const response = await fetch(tokenUrl);
-    const data = await response.json();
+    const data = await response.json() as FacebookTokenResponse;
 
     if (data.error) {
       console.error('Facebook token exchange error:', data.error);
       throw new AppError(data.error.message || 'Failed to exchange Facebook code', 401);
     }
 
-    return data.access_token;
+    return data.access_token!;
   }
 
   async getMe(userId: string) {
@@ -255,14 +269,14 @@ export class AuthService {
     const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${env.FACEBOOK_PAGES_APP_ID}&redirect_uri=${encodeURIComponent(env.FACEBOOK_PAGES_REDIRECT_URI)}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&code=${code}`;
 
     const response = await fetch(tokenUrl);
-    const data = await response.json();
+    const data = await response.json() as FacebookTokenResponse;
 
     if (data.error) {
       console.error('Facebook pages token exchange error:', data.error);
       throw new AppError(data.error.message || 'Failed to exchange Facebook code', 401);
     }
 
-    return data.access_token;
+    return data.access_token!;
   }
 
   // Get list of Facebook Pages managed by user
@@ -270,7 +284,7 @@ export class AuthService {
     const url = `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token,picture&access_token=${userAccessToken}`;
 
     const response = await fetch(url);
-    const data = await response.json();
+    const data = await response.json() as FacebookPagesResponse;
 
     if (data.error) {
       console.error('Facebook pages error:', data.error);
@@ -286,7 +300,7 @@ export class AuthService {
       `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.FACEBOOK_PAGES_APP_ID}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&fb_exchange_token=${pageAccessToken}`
     );
 
-    const data = await response.json();
+    const data = await response.json() as FacebookTokenResponse;
 
     if (data.error) {
       console.error('Long-lived token error:', data.error);

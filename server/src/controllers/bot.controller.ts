@@ -18,7 +18,7 @@ export class BotController {
 
   async getBot(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const bot = await botService.getBot(req.params.id, req.userId!);
+      const bot = await botService.getBot(req.params.id as string, req.userId!);
 
       res.json({
         success: true,
@@ -46,7 +46,7 @@ export class BotController {
   async updateBot(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { name, description, isActive } = req.body;
-      const bot = await botService.updateBot(req.params.id, req.userId!, {
+      const bot = await botService.updateBot(req.params.id as string, req.userId!, {
         name,
         description,
         isActive,
@@ -63,7 +63,7 @@ export class BotController {
 
   async deleteBot(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const result = await botService.deleteBot(req.params.id, req.userId!);
+      const result = await botService.deleteBot(req.params.id as string, req.userId!);
 
       res.json({
         success: true,
@@ -78,7 +78,7 @@ export class BotController {
     try {
       const { pageId, accessToken } = req.body;
       const bot = await botService.connectFacebook(
-        req.params.id,
+        req.params.id as string,
         req.userId!,
         pageId,
         accessToken

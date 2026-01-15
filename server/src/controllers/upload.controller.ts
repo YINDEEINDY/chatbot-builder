@@ -18,7 +18,7 @@ export const uploadController = {
 
   async deleteFile(req: Request, res: Response, next: NextFunction) {
     try {
-      const { id } = req.params;
+      const id = req.params.id as string;
       await uploadService.deleteFile(id);
       res.json({ success: true });
     } catch (error) {
