@@ -9,8 +9,14 @@ class SocketService {
   connect() {
     if (this.socket?.connected) return;
 
+    // Get auth token from storage
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+
     this.socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
+      auth: {
+        token,
+      },
     });
 
     this.socket.on('connect', () => {
@@ -26,7 +32,16 @@ class SocketService {
     });
 
     this.socket.on('connect_error', (error) => {
-      console.error('[Socket] Connection error:', error);
+      console.error('[Socket] Connection error:', error.message);
+      // If authentication failed, don't keep retrying
+      if (error.message === 'Authentication required' || error.message === 'Invalid token') {
+        this.socket?.disconnect();
+      }
+    });
+
+    // Handle authorization errors from server
+    this.socket.on('error', (message: string) => {
+      console.error('[Socket] Server error:', message);
     });
   }
 

@@ -3,6 +3,8 @@ import { prisma } from '../config/db.js';
 import { flowExecutorService } from '../services/flow-executor.service.js';
 import { conversationService } from '../services/conversation.service.js';
 import { io } from '../index.js';
+import { sanitizeMessage } from '../utils/sanitize.js';
+import { logger } from '../utils/logger.js';
 
 interface MessagingEvent {
   sender: { id: string };
@@ -55,7 +57,7 @@ export class WebhookController {
       return res.sendStatus(403);
     }
 
-    console.log(`Webhook verified for bot: ${bot.name}`);
+    logger.info('Webhook verified', { botId, botName: bot.name });
     res.status(200).send(challenge);
   }
 
@@ -75,7 +77,7 @@ export class WebhookController {
     });
 
     if (!bot || !bot.isActive) {
-      console.log('Bot not found or inactive:', botId);
+      logger.warn('Bot not found or inactive', { botId });
       return res.sendStatus(200); // Return 200 to prevent Facebook from retrying
     }
 
@@ -102,21 +104,21 @@ export class WebhookController {
 
     let messageText = '';
 
-    // Handle text message
+    // Handle text message - sanitize to prevent XSS
     if (event.message?.text) {
-      messageText = event.message.text;
+      messageText = sanitizeMessage(event.message.text);
     }
-    // Handle quick reply
+    // Handle quick reply - sanitize payload
     else if (event.message?.quick_reply) {
-      messageText = event.message.quick_reply.payload;
+      messageText = sanitizeMessage(event.message.quick_reply.payload);
     }
-    // Handle postback
+    // Handle postback - sanitize payload
     else if (event.postback) {
-      messageText = event.postback.payload;
+      messageText = sanitizeMessage(event.postback.payload);
     }
 
     if (messageText) {
-      console.log(`[Webhook] Received message from ${senderId}: ${messageText}`);
+      logger.debug('Webhook received message', { botId, senderId, messageText });
 
       // Notify conversation service about new message and get conversation info
       const conversationInfo = await conversationService.onNewMessage(botId, senderId, messageText);
@@ -149,7 +151,7 @@ export class WebhookController {
       const isHumanTakeover = await conversationService.isHumanTakeover(botId, senderId);
 
       if (isHumanTakeover) {
-        console.log(`[Webhook] Conversation is in human takeover mode, skipping bot response`);
+        logger.debug('Conversation in human takeover mode, skipping bot response', { botId, senderId });
         return;
       }
 
@@ -157,9 +159,9 @@ export class WebhookController {
       const result = await flowExecutorService.executeFlow(bot, senderId, messageText);
 
       if (!result.success) {
-        console.error(`[Webhook] Flow execution failed for bot ${botId}:`, result.error);
+        logger.error('Flow execution failed', { botId, error: result.error });
       } else {
-        console.log(`[Webhook] Flow executed successfully for bot ${botId}`);
+        logger.debug('Flow executed successfully', { botId });
       }
     }
   }

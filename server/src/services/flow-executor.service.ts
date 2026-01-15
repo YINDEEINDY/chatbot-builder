@@ -4,6 +4,8 @@ import { messengerService } from './messenger.service.js';
 import { contactService } from './contact.service.js';
 import { blockService, BlockCard, TextCard, ImageCard, GalleryCard, QuickReplyCard, UserInputCard, DelayCard, GoToBlockCard } from './block.service.js';
 import { FlowNode, FlowEdge, NodeType } from '../types/index.js';
+import { escapeForTemplate } from '../utils/sanitize.js';
+import { logger } from '../utils/logger.js';
 
 interface ExecutionContext {
   [key: string]: string | number | boolean;
@@ -31,7 +33,7 @@ export class FlowExecutorService {
       // 3. Try Block-based execution first (Chatfuel-style)
       const triggeredBlock = await blockService.findBlockByTrigger(bot.id, message);
       if (triggeredBlock) {
-        console.log(`[FlowExecutor] Triggered block "${triggeredBlock.name}" for keyword: ${message}`);
+        logger.debug('Triggered block', { blockName: triggeredBlock.name, keyword: message });
         return this.executeBlock(bot, senderId, triggeredBlock, session, context);
       }
 
@@ -40,22 +42,22 @@ export class FlowExecutorService {
 
       // If no Default Answer block exists, create default blocks
       if (!defaultAnswerBlock) {
-        console.log(`[FlowExecutor] No Default Answer block found, creating default blocks for bot ${bot.id}`);
+        logger.debug('No Default Answer block found, creating default blocks', { botId: bot.id });
         await blockService.createDefaultBlocks(bot.id);
         defaultAnswerBlock = await blockService.getDefaultAnswerBlock(bot.id);
       }
 
       // 5. Use Default Answer block for response
       if (defaultAnswerBlock) {
-        console.log(`[FlowExecutor] Using Default Answer block`);
+        logger.debug('Using Default Answer block');
         return this.executeBlock(bot, senderId, defaultAnswerBlock, session, context);
       }
 
       // 6. Fall back to Flow-based execution (should rarely reach here)
-      console.log(`[FlowExecutor] Falling back to Flow-based execution for bot ${bot.id}`);
+      logger.debug('Falling back to Flow-based execution', { botId: bot.id });
       return this.executeFlowBased(bot, senderId, message, session, context);
     } catch (error) {
-      console.error(`[FlowExecutor] Unexpected error:`, error);
+      logger.error('Unexpected flow execution error', { error, botId: bot.id });
       try {
         await messengerService.sendText(bot, senderId, 'Sorry, something went wrong. Please try again later.');
       } catch {
@@ -115,7 +117,7 @@ export class FlowExecutorService {
       await this.updateBlockSession(session.id, null, 0, context);
       return { success: true };
     } catch (error) {
-      console.error(`[FlowExecutor] Error executing block:`, error);
+      logger.error('Error executing block', { error, blockId: block.id });
       return { success: false, error: error instanceof Error ? error.message : 'Block execution error' };
     }
   }
@@ -139,10 +141,10 @@ export class FlowExecutorService {
       const cards: BlockCard[] = JSON.parse(block.cards);
       const currentCard = cards[session.currentCardIdx];
 
-      // Process the user input
+      // Process the user input - escape to prevent template injection
       if (currentCard && currentCard.type === 'userInput') {
         const uiCard = currentCard as UserInputCard;
-        context[uiCard.variableName] = message;
+        context[uiCard.variableName] = escapeForTemplate(message);
 
         // Log incoming message
         await this.logMessage(bot.id, senderId, message, 'incoming');
@@ -189,7 +191,7 @@ export class FlowExecutorService {
 
       return { success: false, error: 'Invalid session state' };
     } catch (error) {
-      console.error(`[FlowExecutor] Error continuing block:`, error);
+      logger.error('Error continuing block execution', { error });
       return { success: false, error: error instanceof Error ? error.message : 'Block continuation error' };
     }
   }
@@ -311,7 +313,7 @@ export class FlowExecutorService {
     if (!session.currentNodeId) {
       flow = await this.findFlowByTrigger(bot.id, message);
       if (flow) {
-        console.log(`[FlowExecutor] Triggered flow "${flow.name}" for keyword: ${message}`);
+        logger.debug('Triggered flow', { flowName: flow.name, keyword: message });
         shouldResetSession = true;
       }
     }
@@ -322,7 +324,7 @@ export class FlowExecutorService {
     }
 
     if (!flow) {
-      console.error(`[FlowExecutor] No flow found for bot: ${bot.id}`);
+      logger.error('No flow found for bot', { botId: bot.id });
       await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured yet.');
       return { success: false, error: 'No flow found' };
     }
@@ -339,7 +341,7 @@ export class FlowExecutorService {
       nodes = JSON.parse(flow.nodes as string);
       edges = JSON.parse(flow.edges as string);
     } catch (parseError) {
-      console.error(`[FlowExecutor] Failed to parse flow data:`, parseError);
+      logger.error('Failed to parse flow data', { error: parseError, flowId: flow.id });
       await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your message.');
       return { success: false, error: 'Invalid flow data' };
     }
@@ -350,16 +352,16 @@ export class FlowExecutorService {
       : this.findStartNode(nodes);
 
     if (!currentNode) {
-      console.error(`[FlowExecutor] No start node found for bot: ${bot.id}`);
+      logger.error('No start node found for bot', { botId: bot.id });
       await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured correctly.');
       return { success: false, error: 'No start node found' };
     }
 
-    // 4. Process incoming message (if waiting for input)
+    // 4. Process incoming message (if waiting for input) - escape to prevent template injection
     if (currentNode.type === 'userInput') {
       const variableName = (currentNode.data as { variableName?: string }).variableName;
       if (variableName) {
-        context[variableName] = message;
+        context[variableName] = escapeForTemplate(message);
       }
       currentNode = this.getNextNode(nodes, edges, currentNode.id);
     }
@@ -371,7 +373,7 @@ export class FlowExecutorService {
     while (currentNode && currentNode.type !== 'userInput' && currentNode.type !== 'end') {
       nodeCount++;
       if (nodeCount > maxNodes) {
-        console.error(`[FlowExecutor] Max node execution limit reached for bot: ${bot.id}`);
+        logger.error('Max node execution limit reached', { botId: bot.id });
         await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your request.');
         return { success: false, error: 'Max node limit reached' };
       }
@@ -379,7 +381,7 @@ export class FlowExecutorService {
       try {
         await this.executeNode(currentNode, bot, senderId, context);
       } catch (nodeError) {
-        console.error(`[FlowExecutor] Error executing node ${currentNode.id}:`, nodeError);
+        logger.error('Error executing node', { nodeId: currentNode.id, error: nodeError });
         // Continue to next node instead of crashing
       }
 
@@ -662,7 +664,7 @@ export class FlowExecutorService {
 
     // Update analytics - non-blocking, don't crash if it fails
     this.updateAnalytics(botId, direction, isNewUserToday, today).catch((err) => {
-      console.error('[FlowExecutor] Analytics update failed (non-critical):', err.message);
+      logger.warn('Analytics update failed (non-critical)', { error: err.message });
     });
   }
 

@@ -1,13 +1,17 @@
 import express from 'express';
 import cors from 'cors';
-import morgan from 'morgan';
+import helmet from 'helmet';
 import path from 'path';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import jwt from 'jsonwebtoken';
 import { env } from './config/env.js';
+import { prisma } from './config/db.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { schedulerService } from './services/scheduler.service.js';
+import { apiLimiter, authLimiter, webhookLimiter } from './middlewares/rateLimit.js';
+import { logger, requestLogger } from './utils/logger.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -26,47 +30,116 @@ export const io = new Server(httpServer, {
   },
 });
 
+// Socket.IO authentication middleware
+io.use(async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    if (!token) {
+      return next(new Error('Authentication required'));
+    }
+
+    const decoded = jwt.verify(token, env.JWT_SECRET) as { userId: string };
+    socket.data.userId = decoded.userId;
+    next();
+  } catch (error) {
+    logger.warn('Socket.IO auth failed', { error: error instanceof Error ? error.message : 'Unknown error' });
+    next(new Error('Invalid token'));
+  }
+});
+
 // Socket.IO connection handling
 io.on('connection', (socket) => {
-  console.log(`[Socket.IO] Client connected: ${socket.id}`);
+  const userId = socket.data.userId;
+  logger.debug('Socket.IO client connected', { socketId: socket.id, userId });
 
-  // Join a bot's room to receive messages for that bot
-  socket.on('join:bot', (botId: string) => {
-    socket.join(`bot:${botId}`);
-    console.log(`[Socket.IO] Client ${socket.id} joined room: bot:${botId}`);
+  // Join a bot's room to receive messages for that bot (with ownership verification)
+  socket.on('join:bot', async (botId: string) => {
+    try {
+      const bot = await prisma.bot.findFirst({
+        where: { id: botId, userId },
+      });
+
+      if (bot) {
+        socket.join(`bot:${botId}`);
+        logger.debug('Client joined bot room', { socketId: socket.id, botId });
+      } else {
+        socket.emit('error', 'Not authorized to access this bot');
+        logger.warn('Unauthorized bot room join attempt', { socketId: socket.id, botId, userId });
+      }
+    } catch (error) {
+      logger.error('Error joining bot room', { error, botId });
+    }
   });
 
   // Leave a bot's room
   socket.on('leave:bot', (botId: string) => {
     socket.leave(`bot:${botId}`);
-    console.log(`[Socket.IO] Client ${socket.id} left room: bot:${botId}`);
+    logger.debug('Client left bot room', { socketId: socket.id, botId });
   });
 
-  // Join a specific conversation room
-  socket.on('join:conversation', (conversationId: string) => {
-    socket.join(`conversation:${conversationId}`);
-    console.log(`[Socket.IO] Client ${socket.id} joined conversation: ${conversationId}`);
+  // Join a specific conversation room (with ownership verification)
+  socket.on('join:conversation', async (conversationId: string) => {
+    try {
+      const conversation = await prisma.conversation.findFirst({
+        where: { id: conversationId },
+        include: { bot: true },
+      });
+
+      if (conversation && conversation.bot.userId === userId) {
+        socket.join(`conversation:${conversationId}`);
+        logger.debug('Client joined conversation room', { socketId: socket.id, conversationId });
+      } else {
+        socket.emit('error', 'Not authorized to access this conversation');
+        logger.warn('Unauthorized conversation room join attempt', { socketId: socket.id, conversationId, userId });
+      }
+    } catch (error) {
+      logger.error('Error joining conversation room', { error, conversationId });
+    }
   });
 
   // Leave a conversation room
   socket.on('leave:conversation', (conversationId: string) => {
     socket.leave(`conversation:${conversationId}`);
-    console.log(`[Socket.IO] Client ${socket.id} left conversation: ${conversationId}`);
+    logger.debug('Client left conversation room', { socketId: socket.id, conversationId });
   });
 
   socket.on('disconnect', () => {
-    console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
+    logger.debug('Socket.IO client disconnected', { socketId: socket.id });
   });
 });
 
-// Middleware
+// Security Middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", env.CLIENT_URL],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
+// CORS Middleware
 app.use(cors({
   origin: corsOrigins,
   credentials: true,
 }));
+
+// Body parsing
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
-app.use(morgan('dev'));
+
+// Request logging
+app.use(requestLogger);
+
+// Rate limiting - apply before routes
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/webhooks', webhookLimiter);
+app.use('/api', apiLimiter);
 
 // Serve static files from uploads directory
 const uploadsPath = path.resolve(env.UPLOAD_DIR);
@@ -85,9 +158,11 @@ app.use(errorHandler);
 
 // Start server
 httpServer.listen(env.PORT, async () => {
-  console.log(`🚀 Server running on http://localhost:${env.PORT}`);
-  console.log(`📚 API available at http://localhost:${env.PORT}/api`);
-  console.log(`🔌 Socket.IO enabled`);
+  logger.info('Server started', {
+    port: env.PORT,
+    environment: env.NODE_ENV,
+    apiUrl: `http://localhost:${env.PORT}/api`,
+  });
 
   // Initialize scheduler service for broadcast scheduling
   await schedulerService.init();
