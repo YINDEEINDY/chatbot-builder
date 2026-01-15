@@ -33,7 +33,6 @@ import {
   Hand,
   Zap,
   ChevronRight,
-  Link2,
   Upload,
   ToggleLeft,
   ToggleRight,
@@ -312,7 +311,7 @@ export function BlocksPage() {
   };
 
   const updateCard = (index: number, updates: Partial<BlockCard>) => {
-    setCards((prev) => prev.map((card, i) => (i === index ? { ...card, ...updates } : card)));
+    setCards((prev) => prev.map((card, i) => (i === index ? { ...card, ...updates } as BlockCard : card)));
     markChanged();
   };
 
