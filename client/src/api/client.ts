@@ -29,7 +29,12 @@ apiClient.interceptors.response.use(
     if (PREVIEW_MODE) {
       return Promise.reject(error);
     }
-    if (error.response?.status === 401) {
+
+    // Don't redirect for auth endpoints (login, register, etc.)
+    // Let those pages handle their own errors
+    const isAuthEndpoint = error.config?.url?.startsWith('/auth/');
+
+    if (error.response?.status === 401 && !isAuthEndpoint) {
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
