@@ -17,6 +17,7 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  Link as LinkIcon,
 } from 'lucide-react';
 
 // Facebook Icon
@@ -28,8 +29,11 @@ const FacebookIcon = () => (
 
 export function ProfilePage() {
   const navigate = useNavigate();
-  const { user, loadUser } = useAuthStore();
+  const { user, loadUser, loginWithFacebook } = useAuthStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Connect Facebook state
+  const [isConnectingFacebook, setIsConnectingFacebook] = useState(false);
 
   // Edit profile state
   const [isEditing, setIsEditing] = useState(false);
@@ -137,6 +141,18 @@ export function ProfilePage() {
     setName(user?.name || '');
     setProfilePic(null);
     setSaveMessage(null);
+  };
+
+  const handleConnectFacebook = async () => {
+    setIsConnectingFacebook(true);
+    try {
+      await loginWithFacebook(true);
+      // User will be redirected to Facebook OAuth
+    } catch (error) {
+      console.error('Failed to connect Facebook:', error);
+      setSaveMessage({ type: 'error', text: 'Failed to connect Facebook. Please try again.' });
+      setIsConnectingFacebook(false);
+    }
   };
 
   return (
@@ -268,17 +284,6 @@ export function ProfilePage() {
                         </div>
                       </div>
 
-                      {isFacebookUser && (
-                        <div className="flex items-center gap-3">
-                          <div className="w-5 h-5 text-[#1877F2]">
-                            <FacebookIcon />
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-500">Connected Account</p>
-                            <p className="font-medium text-[#1877F2]">Facebook</p>
-                          </div>
-                        </div>
-                      )}
                     </div>
 
                     <Button variant="secondary" onClick={() => setIsEditing(true)}>
@@ -288,6 +293,52 @@ export function ProfilePage() {
                 )}
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Connected Accounts Card */}
+        <Card className="mb-6">
+          <CardHeader>
+            <h2 className="text-lg font-semibold">Connected Accounts</h2>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-[#1877F2] flex items-center justify-center text-white">
+                  <FacebookIcon />
+                </div>
+                <div>
+                  <p className="font-medium">Facebook</p>
+                  <p className="text-sm text-gray-500">
+                    {isFacebookUser ? 'Connected' : 'Not connected'}
+                  </p>
+                </div>
+              </div>
+              {isFacebookUser ? (
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="text-sm font-medium">Connected</span>
+                </div>
+              ) : (
+                <Button
+                  variant="secondary"
+                  onClick={handleConnectFacebook}
+                  disabled={isConnectingFacebook}
+                >
+                  {isConnectingFacebook ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <LinkIcon className="w-4 h-4 mr-2" />
+                  )}
+                  Connect
+                </Button>
+              )}
+            </div>
+            {!isFacebookUser && (
+              <p className="text-sm text-gray-500 mt-3">
+                Connect your Facebook account to enable quick login and sync your profile picture.
+              </p>
+            )}
           </CardContent>
         </Card>
 
