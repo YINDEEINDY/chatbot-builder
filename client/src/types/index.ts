@@ -223,6 +223,9 @@ export interface Block {
   name: string;
   botId: string;
   groupName?: string;
+  category?: string;
+  nodeType?: string;
+  description?: string;
   isWelcome: boolean;
   isDefaultAnswer: boolean;
   isEnabled: boolean;

@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ApiResponse, Conversation, Message, PaginatedResponse } from '../types';
+import type { ApiResponse, Conversation, Message } from '../types';
 
 interface MessagesResponse {
   messages: Message[];

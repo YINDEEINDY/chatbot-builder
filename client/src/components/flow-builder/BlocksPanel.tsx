@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useBlockStore } from '../../stores/block.store';
-import { Block, NodeType } from '../../types';
+import { Block } from '../../types';
 import {
   MessageSquare,
   Image,
