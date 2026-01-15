@@ -227,7 +227,7 @@ export function FlowTester({ isOpen, onClose }: FlowTesterProps) {
     }
   }, [isWaitingForInput, currentNodeId, findNode, getNextNode, runFlow, addMessage]);
 
-  const handleQuickReply = useCallback((payload: string, title: string) => {
+  const handleQuickReply = useCallback((_payload: string, title: string) => {
     handleUserInput(title);
   }, [handleUserInput]);
 

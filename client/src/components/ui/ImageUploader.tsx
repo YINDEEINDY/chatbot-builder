@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { Upload, X, Image as ImageIcon, Loader2, Link } from 'lucide-react';
+import { Upload, X, Loader2, Link } from 'lucide-react';
 import { uploadsApi } from '../../api/uploads';
 
 interface ImageUploaderProps {
