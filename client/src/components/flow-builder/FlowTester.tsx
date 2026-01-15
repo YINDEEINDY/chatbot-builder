@@ -3,7 +3,7 @@ import { X, Send, Bot, User, RotateCcw, Play } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useFlowStore } from '../../stores/flow.store';
-import type { Node, Edge } from '@xyflow/react';
+import type { Node } from '@xyflow/react';
 import type { NodeData } from '../../types';
 
 interface Message {

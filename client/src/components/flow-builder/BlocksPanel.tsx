@@ -107,8 +107,9 @@ export function BlocksPanel({ botId, onDragStart }: BlocksPanelProps) {
           </h4>
           <div className="space-y-2">
             {categoryBlocks.map((block) => {
-              const Icon = nodeTypeIcons[block.nodeType] || MessageSquare;
-              const colorClass = nodeTypeColors[block.nodeType] || 'bg-gray-500';
+              const nodeType = block.nodeType || 'text';
+              const Icon = nodeTypeIcons[nodeType] || MessageSquare;
+              const colorClass = nodeTypeColors[nodeType] || 'bg-gray-500';
 
               return (
                 <div

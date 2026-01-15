@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import {
   ReactFlow,
   Background,
@@ -244,6 +244,10 @@ function FlowEditorInner({
       if (blockData) {
         try {
           const block = JSON.parse(blockData) as Block;
+          if (!block.nodeData || !block.nodeType) {
+            console.error('Block missing nodeData or nodeType');
+            return;
+          }
           const nodeData = JSON.parse(block.nodeData) as NodeData;
           const newNode: Node = {
             id: `${block.nodeType}-${uuidv4()}`,

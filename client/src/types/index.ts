@@ -225,6 +225,7 @@ export interface Block {
   groupName?: string;
   category?: string;
   nodeType?: string;
+  nodeData?: string; // JSON string of NodeData for saved nodes
   description?: string;
   isWelcome: boolean;
   isDefaultAnswer: boolean;
