@@ -16,7 +16,6 @@ import {
   Loader2,
   AlertTriangle,
   UserCircle,
-  Image,
 } from 'lucide-react';
 
 export function PagePostsPage() {
