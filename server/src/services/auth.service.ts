@@ -256,7 +256,7 @@ export class AuthService {
     const params = new URLSearchParams({
       client_id: env.FACEBOOK_PAGES_APP_ID,
       redirect_uri: env.FACEBOOK_PAGES_REDIRECT_URI,
-      scope: 'pages_show_list,pages_messaging,pages_read_engagement,pages_manage_metadata',
+      scope: 'pages_show_list,pages_messaging,pages_read_engagement,pages_manage_metadata,pages_read_user_content',
       response_type: 'code',
       state: botId, // Pass botId in state to know which bot to connect
     });

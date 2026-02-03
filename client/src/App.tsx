@@ -19,6 +19,7 @@ import { AuthCallbackPage } from './pages/AuthCallback';
 import { GrowPage } from './pages/GrowPage';
 import { AnalyzePage } from './pages/AnalyzePage';
 import { ConfigurePage } from './pages/ConfigurePage';
+import { PagePostsPage } from './pages/PagePostsPage';
 import { KeywordsPage } from './pages/KeywordsPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -197,6 +198,14 @@ function App() {
           element={
             <PrivateRoute>
               <AnalyzePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bots/:botId/page-posts"
+          element={
+            <PrivateRoute>
+              <PagePostsPage />
             </PrivateRoute>
           }
         />

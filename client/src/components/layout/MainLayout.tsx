@@ -19,6 +19,7 @@ import {
   Workflow,
   Hash,
   Zap,
+  FileText,
 } from 'lucide-react';
 
 interface MainLayoutProps {
@@ -93,6 +94,7 @@ export function MainLayout({ children }: MainLayoutProps) {
           ],
         },
         { path: `/bots/${botId}/live-chat`, label: 'Live Chat', icon: MessageCircle },
+        { path: `/bots/${botId}/page-posts`, label: 'Page Posts', icon: FileText },
         { path: `/bots/${botId}/people`, label: 'People', icon: Users },
         { path: `/bots/${botId}/broadcasts`, label: 'Re-engage', icon: Radio },
         { path: `/bots/${botId}/grow`, label: 'Grow', icon: TrendingUp },
