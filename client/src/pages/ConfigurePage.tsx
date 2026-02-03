@@ -224,7 +224,7 @@ export function ConfigurePage() {
   };
 
   const webhookUrl = currentBot
-    ? `${window.location.origin.replace('5173', '3001')}/api/webhooks/facebook/${currentBot.id}`
+    ? `${import.meta.env.VITE_SERVER_PUBLIC_URL || window.location.origin.replace('5173', '3001')}/api/webhooks/facebook/${currentBot.id}`
     : '';
 
   return (
