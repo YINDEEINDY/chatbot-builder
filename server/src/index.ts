@@ -108,6 +108,11 @@ io.on('connection', (socket) => {
   });
 });
 
+// Trust proxy (required for Render/reverse proxy - fixes rate limiter X-Forwarded-For)
+if (env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 // Security Middleware
 app.use(helmet({
   contentSecurityPolicy: {
