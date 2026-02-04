@@ -335,6 +335,14 @@ export class AuthController {
         });
       }
 
+      // Subscribe the page to webhook events (messages, postbacks, etc.)
+      try {
+        await authService.subscribePageToWebhooks(selectedPage.accessToken, selectedPage.id);
+      } catch (subscribeError: any) {
+        console.error('Failed to subscribe page to webhooks:', subscribeError.message);
+        // Continue with connection even if subscription fails - user can retry
+      }
+
       // Page token is non-expiring (obtained via long-lived user token)
       // Encrypt before storing for security
       const encryptedToken = encrypt(selectedPage.accessToken);

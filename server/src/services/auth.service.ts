@@ -326,6 +326,28 @@ export class AuthService {
     }
   }
 
+  // Subscribe a Facebook Page to webhook events (messages, postbacks, etc.)
+  async subscribePageToWebhooks(pageAccessToken: string, pageId: string): Promise<void> {
+    const url = `https://graph.facebook.com/v21.0/${pageId}/subscribed_apps`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscribed_fields: 'messages,messaging_postbacks,messaging_optins,message_deliveries,message_reads',
+        access_token: pageAccessToken,
+      }),
+    });
+
+    const data = await response.json() as { success?: boolean; error?: { message: string } };
+
+    if (data.error) {
+      console.error('Webhook subscription error:', data.error);
+      throw new AppError(`Failed to subscribe to webhooks: ${data.error.message}`, 500);
+    }
+
+    console.log(`Page ${pageId} subscribed to webhooks successfully`);
+  }
+
   // Exchange short-lived user token for long-lived user token - Uses Business App
   async getLongLivedPageToken(shortLivedToken: string): Promise<string> {
     const response = await fetch(

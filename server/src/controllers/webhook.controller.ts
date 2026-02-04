@@ -6,6 +6,13 @@ import { io } from '../index.js';
 import { sanitizeMessage } from '../utils/sanitize.js';
 import { logger } from '../utils/logger.js';
 
+interface MessageAttachment {
+  type: string; // 'image', 'video', 'audio', 'file', 'story_mention', 'story_reply'
+  payload: {
+    url?: string;
+  };
+}
+
 interface MessagingEvent {
   sender: { id: string };
   recipient: { id: string };
@@ -14,6 +21,11 @@ interface MessagingEvent {
     mid: string;
     text?: string;
     quick_reply?: { payload: string };
+    attachments?: MessageAttachment[];
+    reply_to?: {
+      mid?: string;
+      story?: { url: string; id: string };
+    };
   };
   postback?: {
     payload: string;
@@ -105,9 +117,27 @@ export class WebhookController {
     if (!bot) return;
 
     let messageText = '';
+    let messageType = 'text';
 
+    // Handle story mention (Instagram only)
+    if (event.message?.attachments?.some(a => a.type === 'story_mention')) {
+      const storyAttachment = event.message.attachments.find(a => a.type === 'story_mention')!;
+      messageText = '[story_mention]';
+      messageType = 'story_mention';
+      logger.info('Received Instagram story mention', {
+        botId, senderId, storyUrl: storyAttachment.payload?.url,
+      });
+    }
+    // Handle story reply (user replies to a story via DM)
+    else if (event.message?.reply_to?.story) {
+      messageText = event.message.text ? sanitizeMessage(event.message.text) : '[story_reply]';
+      messageType = 'story_reply';
+      logger.info('Received Instagram story reply', {
+        botId, senderId, storyUrl: event.message.reply_to.story.url,
+      });
+    }
     // Handle text message - sanitize to prevent XSS
-    if (event.message?.text) {
+    else if (event.message?.text) {
       messageText = sanitizeMessage(event.message.text);
     }
     // Handle quick reply - sanitize payload
@@ -131,6 +161,7 @@ export class WebhookController {
         senderId,
         platform,
         content: messageText,
+        messageType,
         direction: 'incoming',
         conversationId: conversationInfo?.conversationId,
         contactId: conversationInfo?.contactId,
@@ -144,6 +175,7 @@ export class WebhookController {
           senderId,
           platform,
           content: messageText,
+          messageType,
           direction: 'incoming',
           conversationId: conversationInfo.conversationId,
           contactId: conversationInfo.contactId,
