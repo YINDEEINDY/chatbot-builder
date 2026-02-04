@@ -65,7 +65,7 @@ export class PageContentService {
       params.set('after', after);
     }
 
-    const url = `${this.graphApiUrl}/${pageId}/feed?${params.toString()}`;
+    const url = `${this.graphApiUrl}/${pageId}/posts?${params.toString()}`;
     const data = await this.callGraphApi<PagePost>(url);
 
     return {
