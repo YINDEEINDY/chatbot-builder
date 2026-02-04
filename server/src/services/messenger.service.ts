@@ -26,7 +26,7 @@ interface CardData {
 }
 
 export class MessengerService {
-  private readonly graphApiUrl = 'https://graph.facebook.com/v18.0';
+  private readonly graphApiUrl = 'https://graph.facebook.com/v21.0';
 
   // Decrypt token if encrypted
   private getToken(bot: Bot): string | null {

@@ -126,17 +126,7 @@ export function PagePostsPage() {
           [postId]: (prev[postId] || []).filter((c) => c.id !== commentId),
         }));
         setPosts((prev) =>
-          prev.map((p) => {
-            if (p.id === postId && p.comments?.summary) {
-              return {
-                ...p,
-                comments: {
-                  summary: { total_count: p.comments.summary.total_count - 1 },
-                },
-              };
-            }
-            return p;
-          })
+          prev.map((p) => p)
         );
       }
     } catch (err) {

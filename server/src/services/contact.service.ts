@@ -250,7 +250,7 @@ class ContactService {
   }
 
   // Create or update a contact when they message the bot
-  async upsertContact(botId: string, senderId: string, name?: string, profilePic?: string) {
+  async upsertContact(botId: string, senderId: string, name?: string, profilePic?: string, platform = 'facebook') {
     return prisma.contact.upsert({
       where: {
         botId_senderId: { botId, senderId },
@@ -266,6 +266,7 @@ class ContactService {
         senderId,
         name,
         profilePic,
+        platform,
         messageCount: 1,
       },
     });

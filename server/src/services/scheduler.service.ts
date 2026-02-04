@@ -167,7 +167,7 @@ class SchedulerService {
         const fbMessage = this.buildFacebookMessage(message);
 
         const response = await fetch(
-          `https://graph.facebook.com/v18.0/me/messages?access_token=${broadcast.bot.facebookToken}`,
+          `https://graph.facebook.com/v21.0/me/messages?access_token=${broadcast.bot.facebookToken}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

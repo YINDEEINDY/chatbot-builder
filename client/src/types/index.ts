@@ -24,6 +24,8 @@ export interface Bot {
   facebookPageId?: string;
   facebookPageName?: string;
   facebookToken?: string;
+  igUserId?: string;
+  igUsername?: string;
   webhookVerifyToken: string;
   isActive: boolean;
   createdAt: string;

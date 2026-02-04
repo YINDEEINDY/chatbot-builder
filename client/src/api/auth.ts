@@ -47,7 +47,7 @@ export const authApi = {
     const response = await apiClient.get<
       ApiResponse<{
         botId: string;
-        pages: Array<{ id: string; name: string; picture?: string }>;
+        pages: Array<{ id: string; name: string; picture?: string; igAccount?: { id: string; username: string } }>;
       }>
     >(`/auth/facebook/pages/session/${sessionId}`);
     return response.data;
@@ -60,6 +60,8 @@ export const authApi = {
         name: string;
         facebookPageId: string;
         facebookPageName: string;
+        igUserId?: string;
+        igUsername?: string;
         isActive: boolean;
       }>
     >(`/auth/facebook/pages/${botId}/connect`, { sessionId, pageId });
@@ -73,6 +75,8 @@ export const authApi = {
         name: string;
         facebookPageId: null;
         facebookPageName: null;
+        igUserId: null;
+        igUsername: null;
         isActive: boolean;
       }>
     >(`/auth/facebook/pages/${botId}/disconnect`);

@@ -12,13 +12,13 @@ interface ExecutionContext {
 }
 
 export class FlowExecutorService {
-  async executeFlow(bot: Bot, senderId: string, message: string): Promise<{ success: boolean; error?: string }> {
+  async executeFlow(bot: Bot, senderId: string, message: string, platform = 'facebook'): Promise<{ success: boolean; error?: string }> {
     try {
       // 1. Get or create user session
       let session = await this.getOrCreateSession(bot.id, senderId);
 
       // 1.5. Create or update contact record
-      await contactService.upsertContact(bot.id, senderId);
+      await contactService.upsertContact(bot.id, senderId, undefined, undefined, platform);
 
       // Get context from session (stored as JSON string in DB)
       const context: ExecutionContext = session.context

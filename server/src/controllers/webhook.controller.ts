@@ -66,10 +66,12 @@ export class WebhookController {
     const botId = req.params.botId as string;
     const body: WebhookBody = req.body;
 
-    // Verify this is a page subscription
-    if (body.object !== 'page') {
+    // Accept both Facebook Messenger ('page') and Instagram DM ('instagram') events
+    if (body.object !== 'page' && body.object !== 'instagram') {
       return res.sendStatus(404);
     }
+
+    const platform = body.object === 'instagram' ? 'instagram' : 'facebook';
 
     // Get the bot
     const bot = await prisma.bot.findUnique({
@@ -78,13 +80,13 @@ export class WebhookController {
 
     if (!bot || !bot.isActive) {
       logger.warn('Bot not found or inactive', { botId });
-      return res.sendStatus(200); // Return 200 to prevent Facebook from retrying
+      return res.sendStatus(200); // Return 200 to prevent retrying
     }
 
     // Process each entry
     for (const entry of body.entry) {
       for (const event of entry.messaging) {
-        await this.handleMessagingEvent(bot.id, event);
+        await this.handleMessagingEvent(bot.id, event, platform);
       }
     }
 
@@ -92,7 +94,7 @@ export class WebhookController {
     res.sendStatus(200);
   }
 
-  private async handleMessagingEvent(botId: string, event: MessagingEvent) {
+  private async handleMessagingEvent(botId: string, event: MessagingEvent, platform: string) {
     const senderId = event.sender.id;
 
     // Get the bot
@@ -118,7 +120,7 @@ export class WebhookController {
     }
 
     if (messageText) {
-      logger.debug('Webhook received message', { botId, senderId, messageText });
+      logger.debug('Webhook received message', { botId, senderId, platform, messageText });
 
       // Notify conversation service about new message and get conversation info
       const conversationInfo = await conversationService.onNewMessage(botId, senderId, messageText);
@@ -127,6 +129,7 @@ export class WebhookController {
       io.to(`bot:${botId}`).emit('message:new', {
         botId,
         senderId,
+        platform,
         content: messageText,
         direction: 'incoming',
         conversationId: conversationInfo?.conversationId,
@@ -139,6 +142,7 @@ export class WebhookController {
         io.to(`conversation:${conversationInfo.conversationId}`).emit('message:new', {
           botId,
           senderId,
+          platform,
           content: messageText,
           direction: 'incoming',
           conversationId: conversationInfo.conversationId,
@@ -155,13 +159,13 @@ export class WebhookController {
         return;
       }
 
-      // Execute bot flow
-      const result = await flowExecutorService.executeFlow(bot, senderId, messageText);
+      // Execute bot flow (works for both Facebook and Instagram)
+      const result = await flowExecutorService.executeFlow(bot, senderId, messageText, platform);
 
       if (!result.success) {
-        logger.error('Flow execution failed', { botId, error: result.error });
+        logger.error('Flow execution failed', { botId, platform, error: result.error });
       } else {
-        logger.debug('Flow executed successfully', { botId });
+        logger.debug('Flow executed successfully', { botId, platform });
       }
     }
   }

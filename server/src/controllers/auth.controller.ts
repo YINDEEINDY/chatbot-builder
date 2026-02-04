@@ -14,6 +14,7 @@ interface FacebookPagesSession {
     name: string;
     accessToken: string;
     picture?: string;
+    igAccount?: { id: string; username: string };
   }>;
   botId: string;
   createdAt: Date;
@@ -214,16 +215,25 @@ export class AuthController {
         );
       }
 
+      // Fetch Instagram Business Account for each page
+      const pagesWithIg = await Promise.all(
+        pages.map(async (p) => {
+          const igAccount = await authService.getInstagramAccount(p.access_token, p.id);
+          return {
+            id: p.id,
+            name: p.name,
+            accessToken: p.access_token,
+            picture: p.picture?.data?.url,
+            igAccount: igAccount || undefined,
+          };
+        })
+      );
+
       // Store session with pages data
       const sessionId = crypto.randomUUID();
       facebookPagesSessionStore.set(sessionId, {
         userAccessToken: longLivedUserToken,
-        pages: pages.map(p => ({
-          id: p.id,
-          name: p.name,
-          accessToken: p.access_token,
-          picture: p.picture?.data?.url,
-        })),
+        pages: pagesWithIg,
         botId,
         createdAt: new Date(),
       });
@@ -273,6 +283,7 @@ export class AuthController {
             id: p.id,
             name: p.name,
             picture: p.picture,
+            igAccount: p.igAccount,
           })),
         },
       });
@@ -334,6 +345,8 @@ export class AuthController {
           facebookPageId: selectedPage.id,
           facebookPageName: selectedPage.name,
           facebookToken: encryptedToken,
+          igUserId: selectedPage.igAccount?.id || null,
+          igUsername: selectedPage.igAccount?.username || null,
           isActive: true,
         },
       });
@@ -348,6 +361,8 @@ export class AuthController {
           name: updatedBot.name,
           facebookPageId: updatedBot.facebookPageId,
           facebookPageName: updatedBot.facebookPageName,
+          igUserId: updatedBot.igUserId,
+          igUsername: updatedBot.igUsername,
           isActive: updatedBot.isActive,
         },
       });
@@ -373,13 +388,15 @@ export class AuthController {
         });
       }
 
-      // Update bot to remove Facebook Page info
+      // Update bot to remove Facebook Page and Instagram info
       const updatedBot = await prisma.bot.update({
         where: { id: botId },
         data: {
           facebookPageId: null,
           facebookPageName: null,
           facebookToken: null,
+          igUserId: null,
+          igUsername: null,
           isActive: false,
         },
       });
@@ -391,6 +408,8 @@ export class AuthController {
           name: updatedBot.name,
           facebookPageId: null,
           facebookPageName: null,
+          igUserId: null,
+          igUsername: null,
           isActive: false,
         },
       });

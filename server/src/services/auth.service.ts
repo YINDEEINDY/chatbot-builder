@@ -206,7 +206,7 @@ export class AuthService {
 
   // Exchange Facebook authorization code for access token
   async exchangeFacebookCode(code: string): Promise<string> {
-    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(env.FACEBOOK_REDIRECT_URI)}&client_secret=${env.FACEBOOK_APP_SECRET}&code=${code}`;
+    const tokenUrl = `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${env.FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(env.FACEBOOK_REDIRECT_URI)}&client_secret=${env.FACEBOOK_APP_SECRET}&code=${code}`;
 
     const response = await fetch(tokenUrl);
     const data = await response.json() as FacebookTokenResponse;
@@ -248,7 +248,7 @@ export class AuthService {
       response_type: 'code',
     });
 
-    return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
   }
 
   // Get Facebook Pages OAuth URL (with page permissions) - Uses Business App
@@ -256,17 +256,17 @@ export class AuthService {
     const params = new URLSearchParams({
       client_id: env.FACEBOOK_PAGES_APP_ID,
       redirect_uri: env.FACEBOOK_PAGES_REDIRECT_URI,
-      scope: 'pages_show_list,pages_messaging,pages_read_engagement,pages_manage_metadata,pages_read_user_content',
+      scope: 'pages_show_list,pages_messaging,pages_read_engagement,pages_manage_metadata,pages_read_user_content,instagram_basic,instagram_manage_messages',
       response_type: 'code',
       state: botId, // Pass botId in state to know which bot to connect
     });
 
-    return `https://www.facebook.com/v18.0/dialog/oauth?${params.toString()}`;
+    return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
   }
 
   // Exchange code for user token (for pages) - Uses Business App
   async exchangeFacebookPagesCode(code: string): Promise<string> {
-    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${env.FACEBOOK_PAGES_APP_ID}&redirect_uri=${encodeURIComponent(env.FACEBOOK_PAGES_REDIRECT_URI)}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&code=${code}`;
+    const tokenUrl = `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${env.FACEBOOK_PAGES_APP_ID}&redirect_uri=${encodeURIComponent(env.FACEBOOK_PAGES_REDIRECT_URI)}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&code=${code}`;
 
     const response = await fetch(tokenUrl);
     const data = await response.json() as FacebookTokenResponse;
@@ -281,7 +281,7 @@ export class AuthService {
 
   // Get list of Facebook Pages managed by user
   async getFacebookPages(userAccessToken: string): Promise<FacebookPage[]> {
-    const url = `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token,picture&access_token=${userAccessToken}`;
+    const url = `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,picture&access_token=${userAccessToken}`;
 
     const response = await fetch(url);
     const data = await response.json() as FacebookPagesResponse;
@@ -294,10 +294,42 @@ export class AuthService {
     return data.data || [];
   }
 
+  // Get Instagram Business Account linked to a Facebook Page
+  async getInstagramAccount(pageAccessToken: string, pageId: string): Promise<{ id: string; username: string } | null> {
+    try {
+      // Step 1: Get the instagram_business_account ID from the page
+      const pageResponse = await fetch(
+        `https://graph.facebook.com/v21.0/${pageId}?fields=instagram_business_account&access_token=${pageAccessToken}`
+      );
+      const pageData = await pageResponse.json() as { instagram_business_account?: { id: string }; error?: { message: string } };
+
+      if (pageData.error || !pageData.instagram_business_account) {
+        return null;
+      }
+
+      const igAccountId = pageData.instagram_business_account.id;
+
+      // Step 2: Get the Instagram username
+      const igResponse = await fetch(
+        `https://graph.facebook.com/v21.0/${igAccountId}?fields=id,username&access_token=${pageAccessToken}`
+      );
+      const igData = await igResponse.json() as { id?: string; username?: string; error?: { message: string } };
+
+      if (igData.error || !igData.id || !igData.username) {
+        return null;
+      }
+
+      return { id: igData.id, username: igData.username };
+    } catch (error) {
+      console.error('Error fetching Instagram account:', error);
+      return null;
+    }
+  }
+
   // Exchange short-lived user token for long-lived user token - Uses Business App
   async getLongLivedPageToken(shortLivedToken: string): Promise<string> {
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.FACEBOOK_PAGES_APP_ID}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&fb_exchange_token=${shortLivedToken}`
+      `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.FACEBOOK_PAGES_APP_ID}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&fb_exchange_token=${shortLivedToken}`
     );
 
     const data = await response.json() as FacebookTokenResponse;

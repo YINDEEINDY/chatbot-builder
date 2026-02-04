@@ -11,6 +11,7 @@ import type { NotificationSettings } from '../types';
 import {
   Settings,
   Facebook,
+  Instagram,
   Key,
   Bell,
   Trash2,
@@ -32,6 +33,7 @@ interface FacebookPage {
   id: string;
   name: string;
   picture?: string;
+  igAccount?: { id: string; username: string };
 }
 
 export function ConfigurePage() {
@@ -391,6 +393,57 @@ export function ConfigurePage() {
           </CardContent>
         </Card>
 
+        {/* Instagram Integration */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg">
+                <Instagram className="w-5 h-5 text-pink-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Instagram Integration</h3>
+                <p className="text-sm text-gray-500">Instagram Business Account linked via Facebook Page</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {currentBot?.igUsername ? (
+              <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border border-pink-200 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="w-6 h-6 text-pink-600" />
+                  <div className="flex-1">
+                    <p className="font-medium text-pink-800">Instagram Connected</p>
+                    <p className="text-sm text-pink-700">
+                      @<span className="font-semibold">{currentBot.igUsername}</span>
+                    </p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() =>
+                      window.open(`https://instagram.com/${currentBot.igUsername}`, '_blank')
+                    }
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    View Profile
+                  </Button>
+                </div>
+                <p className="text-sm text-pink-700 mt-2">
+                  Your bot will also respond to Instagram Direct Messages.
+                </p>
+              </div>
+            ) : (
+              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                <p className="text-sm text-gray-600">
+                  {currentBot?.facebookPageId
+                    ? 'No Instagram Business Account is linked to this Facebook Page. Link an Instagram account to your Page in Facebook settings to enable Instagram DM support.'
+                    : 'Connect a Facebook Page first. If the page has a linked Instagram Business Account, it will be detected automatically.'}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Webhook Settings */}
         <Card className="mb-6">
           <CardHeader>
@@ -598,7 +651,14 @@ export function ConfigurePage() {
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-900 truncate">{page.name}</p>
-                        <p className="text-sm text-gray-500">ID: {page.id}</p>
+                        {page.igAccount ? (
+                          <p className="text-sm text-pink-600">
+                            <Instagram className="w-3 h-3 inline mr-1" />
+                            @{page.igAccount.username}
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-500">ID: {page.id}</p>
+                        )}
                       </div>
                       <LinkIcon className="w-5 h-5 text-gray-400" />
                     </button>
