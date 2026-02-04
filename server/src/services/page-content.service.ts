@@ -13,7 +13,6 @@ export interface PagePost {
   full_picture?: string;
   permalink_url?: string;
   from?: { id: string; name: string };
-  type?: string;
 }
 
 export interface PostComment {
@@ -122,15 +121,11 @@ export class PageContentService {
   }
 
   private async callGraphApi<T>(url: string): Promise<GraphApiResponse<T>> {
-    // Log URL without access_token for debugging
-    const debugUrl = url.replace(/access_token=[^&]+/, 'access_token=***');
-    console.log('Graph API request:', debugUrl);
-
     const response = await fetch(url);
     const data = await response.json() as GraphApiResponse<T>;
 
     if (data.error) {
-      console.error('Facebook Graph API Error:', JSON.stringify(data.error, null, 2));
+      console.error('Facebook Graph API Error:', JSON.stringify(data.error));
       throw new AppError(`Facebook API Error: ${data.error.message}`, 502);
     }
 

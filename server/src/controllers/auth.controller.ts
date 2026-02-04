@@ -327,7 +327,6 @@ export class AuthController {
       // Page token is non-expiring (obtained via long-lived user token)
       // Encrypt before storing for security
       const encryptedToken = encrypt(selectedPage.accessToken);
-      console.log('Storing encrypted page token for page:', selectedPage.id, selectedPage.name);
 
       const updatedBot = await prisma.bot.update({
         where: { id: botId },

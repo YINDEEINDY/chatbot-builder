@@ -9,7 +9,6 @@ export interface PagePost {
   full_picture?: string;
   permalink_url?: string;
   from?: { id: string; name: string };
-  type?: string;
 }
 
 export interface PostComment {

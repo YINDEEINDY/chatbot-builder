@@ -307,7 +307,6 @@ export class AuthService {
       throw new AppError(`Failed to get long-lived token: ${data.error.message}`, 401);
     }
 
-    console.log('Long-lived token exchange successful');
     return data.access_token || shortLivedToken;
   }
 
