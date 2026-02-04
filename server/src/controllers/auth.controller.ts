@@ -198,10 +198,14 @@ export class AuthController {
       }
 
       // Exchange code for user access token
-      const userAccessToken = await authService.exchangeFacebookPagesCode(code);
+      const shortLivedUserToken = await authService.exchangeFacebookPagesCode(code);
 
-      // Get list of pages user manages
-      const pages = await authService.getFacebookPages(userAccessToken);
+      // Exchange short-lived user token for long-lived user token
+      // This ensures page tokens obtained below will be non-expiring
+      const longLivedUserToken = await authService.getLongLivedPageToken(shortLivedUserToken);
+
+      // Get list of pages user manages (using long-lived user token = non-expiring page tokens)
+      const pages = await authService.getFacebookPages(longLivedUserToken);
 
       if (pages.length === 0) {
         return res.redirect(
@@ -319,16 +323,14 @@ export class AuthController {
         });
       }
 
-      // Get long-lived page access token
-      const longLivedToken = await authService.getLongLivedPageToken(selectedPage.accessToken);
-
-      // Update bot with Facebook Page info
+      // Page token is already non-expiring (obtained via long-lived user token)
+      // Store it directly
       const updatedBot = await prisma.bot.update({
         where: { id: botId },
         data: {
           facebookPageId: selectedPage.id,
           facebookPageName: selectedPage.name,
-          facebookToken: longLivedToken,
+          facebookToken: selectedPage.accessToken,
           isActive: true,
         },
       });
