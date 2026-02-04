@@ -129,6 +129,7 @@ export class PageContentService {
     const data = await response.json() as GraphApiResponse<T>;
 
     if (data.error) {
+      console.error('Facebook Graph API Error:', JSON.stringify(data.error, null, 2));
       throw new AppError(`Facebook API Error: ${data.error.message}`, 502);
     }
 
