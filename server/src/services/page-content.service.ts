@@ -14,7 +14,6 @@ export interface PagePost {
   permalink_url?: string;
   from?: { id: string; name: string };
   type?: string;
-  shares?: { count: number };
   likes?: { summary: { total_count: number } };
   comments?: { summary: { total_count: number } };
 }
@@ -59,7 +58,7 @@ export class PageContentService {
     after?: string
   ): Promise<PagePostsResponse> {
     const params = new URLSearchParams({
-      fields: 'id,message,story,created_time,full_picture,permalink_url,from,type,shares,likes.summary(true),comments.summary(true)',
+      fields: 'id,message,story,created_time,full_picture,permalink_url,from,type,likes.summary(true),comments.summary(true)',
       limit: String(limit),
       access_token: pageAccessToken,
     });

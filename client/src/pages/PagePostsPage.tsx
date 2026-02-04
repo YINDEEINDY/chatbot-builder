@@ -8,7 +8,6 @@ import {
   RefreshCw,
   ThumbsUp,
   MessageCircle,
-  Share2,
   Trash2,
   ChevronDown,
   ChevronUp,
@@ -295,12 +294,6 @@ export function PagePostsPage() {
                       <MessageCircle className="w-4 h-4" />
                       {post.comments?.summary?.total_count || 0}
                     </span>
-                    {post.shares && (
-                      <span className="flex items-center gap-1.5">
-                        <Share2 className="w-4 h-4" />
-                        {post.shares.count || 0}
-                      </span>
-                    )}
                   </div>
 
                   {/* Toggle Comments Button */}

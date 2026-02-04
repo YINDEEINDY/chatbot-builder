@@ -10,7 +10,6 @@ export interface PagePost {
   permalink_url?: string;
   from?: { id: string; name: string };
   type?: string;
-  shares?: { count: number };
   likes?: { summary: { total_count: number } };
   comments?: { summary: { total_count: number } };
 }
