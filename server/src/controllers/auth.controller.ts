@@ -216,7 +216,7 @@ export class AuthController {
       // Store session with pages data
       const sessionId = crypto.randomUUID();
       facebookPagesSessionStore.set(sessionId, {
-        userAccessToken,
+        userAccessToken: longLivedUserToken,
         pages: pages.map(p => ({
           id: p.id,
           name: p.name,
