@@ -284,23 +284,11 @@ export function PagePostsPage() {
                     </div>
                   )}
 
-                  {/* Engagement Stats */}
-                  <div className="flex items-center gap-6 py-2 border-t border-b border-gray-100 text-sm text-gray-500">
-                    <span className="flex items-center gap-1.5">
-                      <ThumbsUp className="w-4 h-4" />
-                      {post.likes?.summary?.total_count || 0}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <MessageCircle className="w-4 h-4" />
-                      {post.comments?.summary?.total_count || 0}
-                    </span>
-                  </div>
-
                   {/* Toggle Comments Button */}
-                  {(post.comments?.summary?.total_count || 0) > 0 && (
+                  <div className="border-t border-gray-100 pt-2">
                     <button
                       onClick={() => toggleComments(post.id)}
-                      className="flex items-center gap-2 mt-3 text-sm text-blue-600 hover:text-blue-800"
+                      className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800"
                     >
                       {expandedPostId === post.id ? (
                         <>
@@ -310,12 +298,12 @@ export function PagePostsPage() {
                       ) : (
                         <>
                           <ChevronDown className="w-4 h-4" />
-                          View {post.comments?.summary?.total_count || 0} Comment
-                          {(post.comments?.summary?.total_count || 0) !== 1 ? 's' : ''}
+                          <MessageCircle className="w-4 h-4" />
+                          View Comments
                         </>
                       )}
                     </button>
-                  )}
+                  </div>
 
                   {/* Comments Section */}
                   {expandedPostId === post.id && (
