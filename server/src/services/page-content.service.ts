@@ -56,7 +56,7 @@ export class PageContentService {
     after?: string
   ): Promise<PagePostsResponse> {
     const params = new URLSearchParams({
-      fields: 'id,message,created_time',
+      fields: 'id,message,story,created_time,full_picture,permalink_url,from',
       limit: String(limit),
       access_token: pageAccessToken,
     });
