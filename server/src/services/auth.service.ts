@@ -294,21 +294,21 @@ export class AuthService {
     return data.data || [];
   }
 
-  // Get long-lived page access token - Uses Business App
-  async getLongLivedPageToken(pageAccessToken: string): Promise<string> {
+  // Exchange short-lived user token for long-lived user token - Uses Business App
+  async getLongLivedPageToken(shortLivedToken: string): Promise<string> {
     const response = await fetch(
-      `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.FACEBOOK_PAGES_APP_ID}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&fb_exchange_token=${pageAccessToken}`
+      `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.FACEBOOK_PAGES_APP_ID}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&fb_exchange_token=${shortLivedToken}`
     );
 
     const data = await response.json() as FacebookTokenResponse;
 
     if (data.error) {
-      console.error('Long-lived token error:', data.error);
-      // Return original token if exchange fails
-      return pageAccessToken;
+      console.error('Long-lived token exchange error:', JSON.stringify(data.error));
+      throw new AppError(`Failed to get long-lived token: ${data.error.message}`, 401);
     }
 
-    return data.access_token || pageAccessToken;
+    console.log('Long-lived token exchange successful');
+    return data.access_token || shortLivedToken;
   }
 
   async updateProfile(userId: string, input: UpdateProfileInput) {

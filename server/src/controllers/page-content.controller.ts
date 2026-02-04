@@ -13,9 +13,11 @@ export class PageContentController {
     const token = botService.getDecryptedToken(bot.facebookToken);
 
     if (!bot.facebookPageId || !token) {
+      console.error('Page not connected:', { pageId: bot.facebookPageId, hasToken: !!bot.facebookToken });
       throw new AppError('Facebook Page not connected', 400);
     }
 
+    console.log('Page context:', { pageId: bot.facebookPageId, tokenLength: token.length });
     return { bot, pageId: bot.facebookPageId, token };
   }
 

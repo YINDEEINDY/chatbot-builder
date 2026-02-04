@@ -4,6 +4,7 @@ import { notificationService } from '../services/notification.service.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { env } from '../config/env.js';
 import { prisma } from '../config/db.js';
+import { encrypt } from '../utils/crypto.js';
 
 // Temporary storage for Facebook Pages OAuth sessions
 interface FacebookPagesSession {
@@ -323,14 +324,17 @@ export class AuthController {
         });
       }
 
-      // Page token is already non-expiring (obtained via long-lived user token)
-      // Store it directly
+      // Page token is non-expiring (obtained via long-lived user token)
+      // Encrypt before storing for security
+      const encryptedToken = encrypt(selectedPage.accessToken);
+      console.log('Storing encrypted page token for page:', selectedPage.id, selectedPage.name);
+
       const updatedBot = await prisma.bot.update({
         where: { id: botId },
         data: {
           facebookPageId: selectedPage.id,
           facebookPageName: selectedPage.name,
-          facebookToken: selectedPage.accessToken,
+          facebookToken: encryptedToken,
           isActive: true,
         },
       });
