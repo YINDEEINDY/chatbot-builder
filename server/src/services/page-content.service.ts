@@ -47,7 +47,7 @@ export interface PostCommentsResponse {
 }
 
 export class PageContentService {
-  private readonly graphApiUrl = 'https://graph.facebook.com/v18.0';
+  private readonly graphApiUrl = 'https://graph.facebook.com/v21.0';
 
   async getPagePosts(
     pageAccessToken: string,
@@ -122,6 +122,10 @@ export class PageContentService {
   }
 
   private async callGraphApi<T>(url: string): Promise<GraphApiResponse<T>> {
+    // Log URL without access_token for debugging
+    const debugUrl = url.replace(/access_token=[^&]+/, 'access_token=***');
+    console.log('Graph API request:', debugUrl);
+
     const response = await fetch(url);
     const data = await response.json() as GraphApiResponse<T>;
 
