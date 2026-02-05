@@ -8,12 +8,12 @@ export const env = {
   JWT_SECRET: process.env.JWT_SECRET || 'default-secret-change-me',
   NODE_ENV: process.env.NODE_ENV || 'development',
 
-  // Facebook OAuth - Consumer App (for User Login)
+  // Facebook OAuth - Chatbot Builder Login App (for user login)
   FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID || '',
   FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET || '',
   FACEBOOK_REDIRECT_URI: process.env.FACEBOOK_REDIRECT_URI || 'http://localhost:3001/api/auth/facebook/callback',
 
-  // Facebook OAuth - Business App (for Page Connection)
+  // Facebook OAuth - KonKui App (for page connection)
   FACEBOOK_PAGES_APP_ID: process.env.FACEBOOK_PAGES_APP_ID || '',
   FACEBOOK_PAGES_APP_SECRET: process.env.FACEBOOK_PAGES_APP_SECRET || '',
   FACEBOOK_PAGES_REDIRECT_URI: process.env.FACEBOOK_PAGES_REDIRECT_URI || 'http://localhost:3001/api/auth/facebook/pages/callback',
