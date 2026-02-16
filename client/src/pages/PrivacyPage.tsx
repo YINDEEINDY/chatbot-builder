@@ -3,7 +3,7 @@ export function PrivacyPage() {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Privacy Policy</h1>
-        <p className="text-sm text-gray-500 mb-8">Last updated: January 15, 2026</p>
+        <p className="text-sm text-gray-500 mb-8">Last updated: February 13, 2026</p>
 
         <div className="prose prose-blue max-w-none">
           <section className="mb-8">
@@ -22,8 +22,9 @@ export function PrivacyPage() {
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
               <li><strong>Account Information:</strong> Name, email address, and profile information when you register</li>
               <li><strong>Facebook Data:</strong> When you connect your Facebook Page, we access your Page name, ID, and messaging data</li>
+              <li><strong>Instagram Data:</strong> When you connect your Instagram Business Account, we access your Instagram username, account ID, and direct messaging data</li>
               <li><strong>Usage Data:</strong> Information about how you use our platform, including chatbot configurations and analytics</li>
-              <li><strong>Communication Data:</strong> Messages sent and received through your connected Facebook Pages</li>
+              <li><strong>Communication Data:</strong> Messages sent and received through your connected Facebook Pages and Instagram Business Accounts</li>
             </ul>
           </section>
 
@@ -32,7 +33,7 @@ export function PrivacyPage() {
             <p className="text-gray-600 mb-4">We use the collected information to:</p>
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
               <li>Provide and maintain our chatbot building services</li>
-              <li>Process and respond to messages on your Facebook Pages</li>
+              <li>Process and respond to messages on your Facebook Pages and Instagram Business Accounts</li>
               <li>Display analytics and engagement metrics for your Pages</li>
               <li>Improve and personalize your experience</li>
               <li>Send important updates about our services</li>
@@ -41,19 +42,26 @@ export function PrivacyPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">4. Facebook Data Usage</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">4. Facebook & Instagram Data Usage</h2>
             <p className="text-gray-600 mb-4">
-              When you connect your Facebook Page to our platform, we request the following permissions:
+              When you connect your Facebook Page and Instagram Business Account to our platform, we request the following permissions:
             </p>
+            <h3 className="text-lg font-medium text-gray-700 mt-4 mb-2">Facebook Page Permissions</h3>
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
               <li><strong>pages_show_list:</strong> To display your Pages for selection</li>
               <li><strong>pages_read_engagement:</strong> To show engagement analytics</li>
-              <li><strong>pages_manage_metadata:</strong> To display Page information</li>
-              <li><strong>pages_messaging:</strong> To send and receive messages through your chatbot</li>
+              <li><strong>pages_manage_metadata:</strong> To display Page information and manage webhook subscriptions</li>
+              <li><strong>pages_messaging:</strong> To send and receive messages through your chatbot on Facebook Messenger</li>
+              <li><strong>pages_read_user_content:</strong> To read user content on your Page for analytics</li>
+            </ul>
+            <h3 className="text-lg font-medium text-gray-700 mt-4 mb-2">Instagram Permissions</h3>
+            <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
+              <li><strong>instagram_basic:</strong> To access your Instagram Business Account profile information, including username and account ID</li>
+              <li><strong>instagram_manage_messages:</strong> To send and receive direct messages on your Instagram Business Account through your chatbot, enabling automated responses and live chat support for your Instagram audience</li>
             </ul>
             <p className="text-gray-600 mt-4">
               We only access and store the data necessary to provide our services. We do not sell
-              your Facebook data to third parties.
+              your Facebook or Instagram data to third parties.
             </p>
           </section>
 
@@ -102,9 +110,10 @@ export function PrivacyPage() {
           <section className="mb-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">9. Third-Party Services</h2>
             <p className="text-gray-600 mb-4">
-              Our platform integrates with Facebook/Meta services. Please review Facebook's
-              Privacy Policy for information about how they handle your data. We are not
-              responsible for the privacy practices of third-party services.
+              Our platform integrates with Facebook/Meta services, including Facebook Messenger
+              and Instagram Messaging APIs. Please review Meta's Privacy Policy for information
+              about how they handle your data. We are not responsible for the privacy practices
+              of third-party services.
             </p>
           </section>
 
