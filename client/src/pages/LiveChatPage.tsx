@@ -16,6 +16,8 @@ import {
   X,
   Loader2,
   Radio,
+  Instagram,
+  Facebook,
 } from 'lucide-react';
 
 export function LiveChatPage() {
@@ -287,9 +289,22 @@ export function LiveChatPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="font-medium text-gray-900 truncate">
-                            {conversation.contact?.name || conversation.contact?.senderId}
-                          </p>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <p className="font-medium text-gray-900 truncate">
+                              {conversation.contact?.name || conversation.contact?.senderId}
+                            </p>
+                            {conversation.contact?.platform === 'instagram' ? (
+                              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500">
+                                <Instagram className="w-2.5 h-2.5" />
+                                IG
+                              </span>
+                            ) : (
+                              <span className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-white bg-blue-500">
+                                <Facebook className="w-2.5 h-2.5" />
+                                FB
+                              </span>
+                            )}
+                          </div>
                           {conversation.unreadCount > 0 && (
                             <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5">
                               {conversation.unreadCount}
@@ -339,10 +354,23 @@ export function LiveChatPage() {
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {selectedConversation.contact?.name ||
-                          selectedConversation.contact?.senderId}
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-gray-900">
+                          {selectedConversation.contact?.name ||
+                            selectedConversation.contact?.senderId}
+                        </p>
+                        {selectedConversation.contact?.platform === 'instagram' ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white bg-gradient-to-r from-purple-500 to-pink-500">
+                            <Instagram className="w-3 h-3" />
+                            Instagram
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white bg-blue-500">
+                            <Facebook className="w-3 h-3" />
+                            Messenger
+                          </span>
+                        )}
+                      </div>
                       <div className="flex items-center gap-1 text-xs text-gray-500">
                         <div className={`w-2 h-2 rounded-full ${getStatusColor(selectedConversation.status)}`} />
                         <span>{getStatusLabel(selectedConversation.status)} mode</span>

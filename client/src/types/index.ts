@@ -245,6 +245,7 @@ export interface Contact {
   senderId: string;
   name?: string;
   profilePic?: string;
+  platform: 'facebook' | 'instagram';
   lastSeenAt: string;
   messageCount: number;
   tags: string; // JSON array
