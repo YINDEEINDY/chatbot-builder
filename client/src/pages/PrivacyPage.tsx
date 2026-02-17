@@ -48,11 +48,11 @@ export function PrivacyPage() {
             </p>
             <h3 className="text-lg font-medium text-gray-700 mt-4 mb-2">Facebook Page Permissions</h3>
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
-              <li><strong>pages_show_list:</strong> To display your Pages for selection</li>
-              <li><strong>pages_read_engagement:</strong> To show engagement analytics</li>
-              <li><strong>pages_manage_metadata:</strong> To display Page information and manage webhook subscriptions</li>
-              <li><strong>pages_messaging:</strong> To send and receive messages through your chatbot on Facebook Messenger</li>
-              <li><strong>pages_read_user_content:</strong> To read user content on your Page for analytics</li>
+              <li><strong>pages_show_list:</strong> To display your managed Facebook Pages so you can select which Page to connect to the chatbot</li>
+              <li><strong>pages_read_engagement:</strong> To read and display posts, comments, and engagement data from your Facebook Page so you can monitor and manage your Page content</li>
+              <li><strong>pages_manage_metadata:</strong> To display Page information and subscribe your Page to webhook events for receiving real-time messages</li>
+              <li><strong>pages_messaging:</strong> To send and receive messages through your chatbot on Facebook Messenger, enabling automated responses and live chat support</li>
+              <li><strong>pages_read_user_content:</strong> To read user-generated content such as comments and reviews on your Page, allowing you to view and manage interactions</li>
             </ul>
             <h3 className="text-lg font-medium text-gray-700 mt-4 mb-2">Instagram Permissions</h3>
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
