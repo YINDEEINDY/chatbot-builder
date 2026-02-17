@@ -2,21 +2,6 @@ import { create } from 'zustand';
 import { Bot } from '../types';
 import { botsApi } from '../api/bots';
 
-// PREVIEW MODE: Set to true to use mock data for UI preview
-const PREVIEW_MODE = false;
-
-const mockBot: Bot = {
-  id: 'mock-bot',
-  name: 'Demo Bot',
-  description: 'A demo bot for testing',
-  userId: 'preview',
-  isActive: true,
-  webhookVerifyToken: 'mock-token',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  _count: { flows: 1, messages: 0 },
-};
-
 interface BotState {
   bots: Bot[];
   currentBot: Bot | null;
@@ -48,12 +33,6 @@ export const useBotStore = create<BotState>((set, get) => ({
   },
 
   loadBot: async (id: string) => {
-    // Use mock data in preview mode
-    if (PREVIEW_MODE) {
-      set({ currentBot: mockBot, isLoading: false });
-      return;
-    }
-
     set({ isLoading: true });
     try {
       const response = await botsApi.get(id);

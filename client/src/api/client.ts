@@ -1,8 +1,5 @@
 import axios from 'axios';
 
-// PREVIEW MODE: Set to true to bypass API redirects for UI preview
-const PREVIEW_MODE = false;
-
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export const apiClient = axios.create({
@@ -25,11 +22,6 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Skip redirect in preview mode
-    if (PREVIEW_MODE) {
-      return Promise.reject(error);
-    }
-
     // Don't redirect for auth endpoints (login, register, etc.)
     // Let those pages handle their own errors
     const isAuthEndpoint = error.config?.url?.startsWith('/auth/');

@@ -16,9 +16,6 @@ interface AuthState {
   loadUser: () => Promise<void>;
 }
 
-// PREVIEW MODE: Set to true to bypass auth for UI preview
-const PREVIEW_MODE = false;
-
 // Storage keys
 const TOKEN_KEY = 'token';
 const REMEMBER_KEY = 'rememberMe';
@@ -52,12 +49,12 @@ const isRemembered = (): boolean => {
 };
 
 export const useAuthStore = create<AuthState>((set, get) => ({
-  user: PREVIEW_MODE ? { id: 'preview', email: 'preview@test.com', name: 'Preview User', createdAt: new Date().toISOString() } : null,
+  user: null,
   token: getStoredToken(),
   // Start with isLoading: true if there's a token, so PrivateRoute shows loading spinner
   // until loadUser() completes (prevents redirect race condition)
-  isLoading: !PREVIEW_MODE && !!getStoredToken(),
-  isAuthenticated: PREVIEW_MODE,
+  isLoading: !!getStoredToken(),
+  isAuthenticated: false,
 
   login: async (email: string, password: string, rememberMe: boolean = true) => {
     const response = await authApi.login({ email, password, rememberMe });
@@ -97,11 +94,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       localStorage.removeItem(REMEMBER_KEY);
     }
 
-    console.log('auth.store: loginWithFacebook called');
     const response = await authApi.getFacebookAuthUrl();
-    console.log('auth.store: getFacebookAuthUrl response:', response);
     if (response.success && response.data?.url) {
-      console.log('auth.store: redirecting to:', response.data.url);
       window.location.href = response.data.url;
     } else {
       throw new Error('Failed to get Facebook login URL');
@@ -147,12 +141,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   loadUser: async () => {
-    // Skip API call in preview mode
-    if (PREVIEW_MODE) {
-      set({ isLoading: false });
-      return;
-    }
-
     const token = get().token;
     if (!token) {
       set({ isLoading: false });

@@ -3,56 +3,6 @@ import { Node, Edge, addEdge, Connection, applyNodeChanges, applyEdgeChanges, No
 import { Flow, FlowNode, FlowEdge, NodeData } from '../types';
 import { flowsApi } from '../api/flows';
 
-// PREVIEW MODE: Set to true to use mock data for UI preview
-const PREVIEW_MODE = false;
-
-// Mock data for preview
-const mockFlow: Flow = {
-  id: 'mock-flow',
-  name: 'Welcome Flow',
-  botId: 'mock-bot',
-  nodes: '[]',
-  edges: '[]',
-  triggers: '[]',
-  isDefault: true,
-  isActive: true,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
-const mockNodes: Node<NodeData>[] = [
-  {
-    id: 'start-1',
-    type: 'start',
-    position: { x: 250, y: 50 },
-    data: { label: 'Start' },
-  },
-  {
-    id: 'text-1',
-    type: 'text',
-    position: { x: 250, y: 150 },
-    data: { label: 'Welcome Message', message: 'Hello! Welcome to our bot.' },
-  },
-  {
-    id: 'quickReply-1',
-    type: 'quickReply',
-    position: { x: 250, y: 280 },
-    data: {
-      label: 'Main Menu',
-      message: 'How can I help you?',
-      buttons: [
-        { id: '1', title: 'Support', payload: 'support' },
-        { id: '2', title: 'Sales', payload: 'sales' },
-      ]
-    },
-  },
-];
-
-const mockEdges: Edge[] = [
-  { id: 'e1', source: 'start-1', target: 'text-1' },
-  { id: 'e2', source: 'text-1', target: 'quickReply-1' },
-];
-
 // History state for undo/redo
 interface HistoryState {
   nodes: Node<NodeData>[];
@@ -129,22 +79,6 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
 
   loadFlow: async (botId: string, flowId: string) => {
-    // Use mock data in preview mode
-    if (PREVIEW_MODE) {
-      set({
-        currentFlow: mockFlow,
-        nodes: mockNodes,
-        edges: mockEdges,
-        isLoading: false,
-        hasUnsavedChanges: false,
-        history: [{ nodes: mockNodes, edges: mockEdges }],
-        historyIndex: 0,
-        canUndo: false,
-        canRedo: false,
-      });
-      return;
-    }
-
     set({ isLoading: true });
     try {
       const response = await flowsApi.get(botId, flowId);
