@@ -3,12 +3,18 @@ import { env } from '../config/env.js';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
-const AUTH_TAG_LENGTH = 16;
 
-// Use JWT_SECRET as encryption key (or create a separate ENCRYPTION_KEY)
+// Derive a 256-bit encryption key from JWT_SECRET using scrypt
+// Uses a proper derived salt instead of a hardcoded string
 const getKey = (): Buffer => {
   const secret = env.JWT_SECRET;
-  return crypto.scryptSync(secret, 'salt', 32);
+  const salt = crypto.createHash('sha256').update(`${secret}-encryption-salt`).digest();
+  return crypto.scryptSync(secret, salt, 32);
+};
+
+// Legacy key for backward compatibility with data encrypted using old salt
+const getLegacyKey = (): Buffer => {
+  return crypto.scryptSync(env.JWT_SECRET, 'salt', 32);
 };
 
 export const encrypt = (text: string): string => {
@@ -34,15 +40,21 @@ export const decrypt = (encryptedText: string): string => {
   const [ivHex, authTagHex, encrypted] = parts;
   const iv = Buffer.from(ivHex, 'hex');
   const authTag = Buffer.from(authTagHex, 'hex');
-  const key = getKey();
 
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(authTag);
+  // Try new key first, fall back to legacy key for backward compatibility
+  for (const key of [getKey(), getLegacyKey()]) {
+    try {
+      const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+      decipher.setAuthTag(authTag);
+      let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+      decrypted += decipher.final('utf8');
+      return decrypted;
+    } catch {
+      continue;
+    }
+  }
 
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-
-  return decrypted;
+  throw new Error('Failed to decrypt: invalid key or corrupted data');
 };
 
 // Check if a string is encrypted (has the expected format)
