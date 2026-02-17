@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { env } from '../config/env.js';
 import { prisma } from '../config/db.js';
+import { logger } from '../utils/logger.js';
 
 interface EmailOptions {
   to: string;
@@ -26,15 +27,15 @@ class NotificationService {
           pass: env.SMTP_PASS,
         },
       });
-      console.log('[Notification] Email service initialized');
+      logger.info('[Notification] Email service initialized');
     } else {
-      console.log('[Notification] Email service not configured (missing SMTP settings)');
+      logger.info('[Notification] Email service not configured (missing SMTP settings)');
     }
   }
 
   async sendEmail(options: EmailOptions): Promise<boolean> {
     if (!this.transporter) {
-      console.log('[Notification] Email not sent - no transporter configured');
+      logger.info('[Notification] Email not sent - no transporter configured');
       return false;
     }
 
@@ -48,7 +49,7 @@ class NotificationService {
       console.log(`[Notification] Email sent to ${options.to}`);
       return true;
     } catch (error) {
-      console.error('[Notification] Failed to send email:', error);
+      logger.error('[Notification] Failed to send email:', error);
       return false;
     }
   }

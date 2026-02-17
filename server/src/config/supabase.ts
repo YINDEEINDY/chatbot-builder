@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { env } from './env.js';
+import { logger } from '../utils/logger.js';
 
 if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_KEY) {
-  console.warn('[Supabase] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY environment variables');
+  logger.warn('[Supabase] Missing SUPABASE_URL or SUPABASE_SERVICE_KEY environment variables');
 }
 
 export const supabase = createClient(
@@ -32,7 +33,7 @@ export async function uploadToSupabase(
       });
 
     if (error) {
-      console.error('[Supabase] Upload error:', error.message);
+      logger.error('[Supabase] Upload error:', error.message);
       return null;
     }
 
@@ -43,7 +44,7 @@ export async function uploadToSupabase(
 
     return urlData.publicUrl;
   } catch (error) {
-    console.error('[Supabase] Upload exception:', error);
+    logger.error('[Supabase] Upload exception:', error);
     return null;
   }
 }
@@ -55,13 +56,13 @@ export async function deleteFromSupabase(filePath: string): Promise<boolean> {
       .remove([filePath]);
 
     if (error) {
-      console.error('[Supabase] Delete error:', error.message);
+      logger.error('[Supabase] Delete error:', error.message);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('[Supabase] Delete exception:', error);
+    logger.error('[Supabase] Delete exception:', error);
     return false;
   }
 }

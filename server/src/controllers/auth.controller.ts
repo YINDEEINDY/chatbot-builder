@@ -5,6 +5,7 @@ import { AuthRequest } from '../middlewares/auth.js';
 import { env } from '../config/env.js';
 import { prisma } from '../config/db.js';
 import { encrypt } from '../utils/crypto.js';
+import { logger } from '../utils/logger.js';
 
 // Temporary storage for Facebook Pages OAuth sessions
 interface FacebookPagesSession {
@@ -94,7 +95,7 @@ export class AuthController {
 
       // Handle Facebook error
       if (error) {
-        console.error('Facebook OAuth error:', error, error_description);
+        logger.error('Facebook OAuth error:', error, error_description);
         return res.redirect(`${env.CLIENT_URL}/login?error=${encodeURIComponent(String(error_description || error))}`);
       }
 
@@ -111,7 +112,7 @@ export class AuthController {
       // Redirect to frontend with token
       res.redirect(`${env.CLIENT_URL}/auth/callback?token=${result.token}`);
     } catch (error: any) {
-      console.error('Facebook callback error:', error);
+      logger.error('Facebook callback error:', error);
       res.redirect(`${env.CLIENT_URL}/login?error=${encodeURIComponent(error.message || 'Facebook login failed')}`);
     }
   }
@@ -181,7 +182,7 @@ export class AuthController {
 
       // Handle Facebook error
       if (error) {
-        console.error('Facebook Pages OAuth error:', error, error_description);
+        logger.error('Facebook Pages OAuth error:', error, error_description);
         return res.redirect(
           `${env.CLIENT_URL}/bots/${botId}/settings?error=${encodeURIComponent(String(error_description || error))}`
         );
@@ -241,7 +242,7 @@ export class AuthController {
       // Redirect to frontend with session ID
       res.redirect(`${env.CLIENT_URL}/bots/${botId}/settings?pageSession=${sessionId}`);
     } catch (error: any) {
-      console.error('Facebook Pages callback error:', error);
+      logger.error('Facebook Pages callback error:', error);
       const botId = req.query.state as string;
       res.redirect(
         `${env.CLIENT_URL}/bots/${botId || ''}/settings?error=${encodeURIComponent(error.message || 'Failed to connect Facebook Pages')}`
@@ -339,7 +340,7 @@ export class AuthController {
       try {
         await authService.subscribePageToWebhooks(selectedPage.accessToken, selectedPage.id);
       } catch (subscribeError: any) {
-        console.error('Failed to subscribe page to webhooks:', subscribeError.message);
+        logger.error('Failed to subscribe page to webhooks:', subscribeError.message);
         // Continue with connection even if subscription fails - user can retry
       }
 

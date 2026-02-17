@@ -1,5 +1,6 @@
 import { Bot } from '@prisma/client';
 import { decrypt, isEncrypted } from '../utils/crypto.js';
+import { logger } from '../utils/logger.js';
 
 interface QuickReplyButton {
   title: string;
@@ -40,7 +41,7 @@ export class MessengerService {
   async sendText(bot: Bot, recipientId: string, text: string): Promise<void> {
     const token = this.getToken(bot);
     if (!token) {
-      console.log(`[Mock] Sending text to ${recipientId}: ${text}`);
+      logger.info(`[Mock] Sending text to ${recipientId}: ${text}`);
       return;
     }
 
@@ -53,13 +54,13 @@ export class MessengerService {
   async sendImage(bot: Bot, recipientId: string, imageUrl: string): Promise<void> {
     const token = this.getToken(bot);
     if (!token) {
-      console.log(`[Mock] Sending image to ${recipientId}: ${imageUrl}`);
+      logger.info(`[Mock] Sending image to ${recipientId}: ${imageUrl}`);
       return;
     }
 
     // Check if it's a base64 data URL - Facebook doesn't support these
     if (imageUrl.startsWith('data:')) {
-      console.warn(`[Messenger] Skipping base64 image - Facebook requires a public URL. Please use an image URL instead.`);
+      logger.warn(`[Messenger] Skipping base64 image - Facebook requires a public URL. Please use an image URL instead.`);
       return;
     }
 
@@ -81,7 +82,7 @@ export class MessengerService {
   ): Promise<void> {
     const token = this.getToken(bot);
     if (!token) {
-      console.log(`[Mock] Sending quick replies to ${recipientId}:`, data);
+      logger.info(`[Mock] Sending quick replies to ${recipientId}:`, data);
       return;
     }
 
@@ -107,7 +108,7 @@ export class MessengerService {
   ): Promise<void> {
     const token = this.getToken(bot);
     if (!token) {
-      console.log(`[Mock] Sending card to ${recipientId}:`, data);
+      logger.info(`[Mock] Sending card to ${recipientId}:`, data);
       return;
     }
 
@@ -138,7 +139,7 @@ export class MessengerService {
     if (data.imageUrl) {
       // Skip base64 images - Facebook requires public URLs
       if (data.imageUrl.startsWith('data:')) {
-        console.warn(`[Messenger] Skipping base64 image in card - Facebook requires a public URL.`);
+        logger.warn(`[Messenger] Skipping base64 image in card - Facebook requires a public URL.`);
       } else {
         element.image_url = data.imageUrl;
       }
@@ -169,7 +170,7 @@ export class MessengerService {
   ): Promise<void> {
     const token = this.getToken(bot);
     if (!token) {
-      console.log(`[Mock] Typing ${isTyping ? 'on' : 'off'} for ${recipientId}`);
+      logger.info(`[Mock] Typing ${isTyping ? 'on' : 'off'} for ${recipientId}`);
       return;
     }
 
@@ -188,7 +189,7 @@ export class MessengerService {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('Facebook API Error:', error);
+      logger.error('Facebook API Error:', error);
       throw new Error(`Facebook API Error: ${JSON.stringify(error)}`);
     }
   }

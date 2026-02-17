@@ -1,4 +1,5 @@
 import { AppError } from '../middlewares/errorHandler.js';
+import { logger } from '../utils/logger.js';
 
 interface GraphApiPaging {
   cursors?: { after?: string; before?: string };
@@ -125,7 +126,7 @@ export class PageContentService {
     const data = await response.json() as GraphApiResponse<T>;
 
     if (data.error) {
-      console.error('Facebook Graph API Error:', JSON.stringify(data.error));
+      logger.error('Facebook Graph API Error:', JSON.stringify(data.error));
       throw new AppError(`Facebook API Error: ${data.error.message}`, 502);
     }
 

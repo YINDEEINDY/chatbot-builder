@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../config/db.js';
 import { env } from '../config/env.js';
 import { AppError } from '../middlewares/errorHandler.js';
+import { logger } from '../utils/logger.js';
 
 interface RegisterInput {
   email: string;
@@ -212,7 +213,7 @@ export class AuthService {
     const data = await response.json() as FacebookTokenResponse;
 
     if (data.error) {
-      console.error('Facebook token exchange error:', data.error);
+      logger.error('Facebook token exchange error:', data.error);
       throw new AppError(data.error.message || 'Failed to exchange Facebook code', 401);
     }
 
@@ -272,7 +273,7 @@ export class AuthService {
     const data = await response.json() as FacebookTokenResponse;
 
     if (data.error) {
-      console.error('Facebook pages token exchange error:', data.error);
+      logger.error('Facebook pages token exchange error:', data.error);
       throw new AppError(data.error.message || 'Failed to exchange Facebook code', 401);
     }
 
@@ -287,7 +288,7 @@ export class AuthService {
     const data = await response.json() as FacebookPagesResponse;
 
     if (data.error) {
-      console.error('Facebook pages error:', data.error);
+      logger.error('Facebook pages error:', data.error);
       throw new AppError(data.error.message || 'Failed to get Facebook pages', 401);
     }
 
@@ -321,7 +322,7 @@ export class AuthService {
 
       return { id: igData.id, username: igData.username };
     } catch (error) {
-      console.error('Error fetching Instagram account:', error);
+      logger.error('Error fetching Instagram account:', error);
       return null;
     }
   }
@@ -341,11 +342,11 @@ export class AuthService {
     const data = await response.json() as { success?: boolean; error?: { message: string } };
 
     if (data.error) {
-      console.error('Webhook subscription error:', data.error);
+      logger.error('Webhook subscription error:', data.error);
       throw new AppError(`Failed to subscribe to webhooks: ${data.error.message}`, 500);
     }
 
-    console.log(`Page ${pageId} subscribed to webhooks successfully`);
+    logger.info(`Page ${pageId} subscribed to webhooks successfully`);
   }
 
   // Exchange short-lived user token for long-lived user token - uses KonKui App
@@ -357,7 +358,7 @@ export class AuthService {
     const data = await response.json() as FacebookTokenResponse;
 
     if (data.error) {
-      console.error('Long-lived token exchange error:', JSON.stringify(data.error));
+      logger.error('Long-lived token exchange error:', JSON.stringify(data.error));
       throw new AppError(`Failed to get long-lived token: ${data.error.message}`, 401);
     }
 

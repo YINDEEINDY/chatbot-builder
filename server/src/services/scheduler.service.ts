@@ -1,5 +1,6 @@
 import * as schedule from 'node-schedule';
 import { prisma } from '../config/db.js';
+import { logger } from '../utils/logger.js';
 
 type JobCallback = () => Promise<void>;
 
@@ -8,7 +9,7 @@ class SchedulerService {
 
   // Initialize scheduler on server start - load all pending scheduled broadcasts
   async init() {
-    console.log('[Scheduler] Initializing scheduler service...');
+    logger.info('[Scheduler] Initializing scheduler service...');
 
     try {
       // Find all broadcasts that are scheduled and not yet sent
@@ -24,7 +25,7 @@ class SchedulerService {
         },
       });
 
-      console.log(`[Scheduler] Found ${scheduledBroadcasts.length} pending scheduled broadcasts`);
+      logger.info(`[Scheduler] Found ${scheduledBroadcasts.length} pending scheduled broadcasts`);
 
       for (const broadcast of scheduledBroadcasts) {
         if (broadcast.scheduledAt) {
@@ -39,9 +40,9 @@ class SchedulerService {
         }
       }
 
-      console.log('[Scheduler] Scheduler service initialized');
+      logger.info('[Scheduler] Scheduler service initialized');
     } catch (error) {
-      console.error('[Scheduler] Failed to initialize:', error);
+      logger.error('[Scheduler] Failed to initialize:', error);
     }
   }
 
@@ -51,13 +52,13 @@ class SchedulerService {
     this.cancelJob(broadcastId);
 
     const job = schedule.scheduleJob(scheduledAt, async () => {
-      console.log(`[Scheduler] Executing scheduled broadcast: ${broadcastId}`);
+      logger.info(`[Scheduler] Executing scheduled broadcast: ${broadcastId}`);
 
       try {
         await callback();
-        console.log(`[Scheduler] Broadcast ${broadcastId} sent successfully`);
+        logger.info(`[Scheduler] Broadcast ${broadcastId} sent successfully`);
       } catch (error) {
-        console.error(`[Scheduler] Failed to send broadcast ${broadcastId}:`, error);
+        logger.error(`[Scheduler] Failed to send broadcast ${broadcastId}:`, error);
       }
 
       // Remove job from map after execution
@@ -66,9 +67,9 @@ class SchedulerService {
 
     if (job) {
       this.jobs.set(broadcastId, job);
-      console.log(`[Scheduler] Scheduled broadcast ${broadcastId} for ${scheduledAt.toISOString()}`);
+      logger.info(`[Scheduler] Scheduled broadcast ${broadcastId} for ${scheduledAt.toISOString()}`);
     } else {
-      console.error(`[Scheduler] Failed to schedule broadcast ${broadcastId} - time may be in the past`);
+      logger.error(`[Scheduler] Failed to schedule broadcast ${broadcastId} - time may be in the past`);
     }
   }
 
@@ -78,7 +79,7 @@ class SchedulerService {
     if (existingJob) {
       existingJob.cancel();
       this.jobs.delete(broadcastId);
-      console.log(`[Scheduler] Cancelled scheduled job: ${broadcastId}`);
+      logger.info(`[Scheduler] Cancelled scheduled job: ${broadcastId}`);
     }
   }
 
@@ -90,17 +91,17 @@ class SchedulerService {
     });
 
     if (!broadcast || !broadcast.bot) {
-      console.error(`[Scheduler] Broadcast ${broadcastId} not found`);
+      logger.error(`[Scheduler] Broadcast ${broadcastId} not found`);
       return;
     }
 
     if (broadcast.status !== 'scheduled') {
-      console.log(`[Scheduler] Broadcast ${broadcastId} is no longer scheduled (status: ${broadcast.status})`);
+      logger.info(`[Scheduler] Broadcast ${broadcastId} is no longer scheduled (status: ${broadcast.status})`);
       return;
     }
 
     if (!broadcast.bot.facebookToken) {
-      console.error(`[Scheduler] Bot ${botId} has no Facebook token`);
+      logger.error(`[Scheduler] Bot ${botId} has no Facebook token`);
       await prisma.broadcast.update({
         where: { id: broadcastId },
         data: { status: 'failed' },
@@ -126,7 +127,7 @@ class SchedulerService {
     }
 
     if (contacts.length === 0) {
-      console.log(`[Scheduler] No contacts to send broadcast ${broadcastId}`);
+      logger.info(`[Scheduler] No contacts to send broadcast ${broadcastId}`);
       await prisma.broadcast.update({
         where: { id: broadcastId },
         data: { status: 'sent', sentAt: new Date(), sentCount: 0 },
@@ -219,7 +220,7 @@ class SchedulerService {
       },
     });
 
-    console.log(`[Scheduler] Broadcast ${broadcastId} completed: ${sentCount} sent, ${failedCount} failed`);
+    logger.info(`[Scheduler] Broadcast ${broadcastId} completed: ${sentCount} sent, ${failedCount} failed`);
   }
 
   private buildFacebookMessage(message: {
