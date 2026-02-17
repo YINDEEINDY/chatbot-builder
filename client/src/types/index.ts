@@ -1,3 +1,6 @@
+// Client types - source of truth for all shared types
+// NOTE: Node/Flow types should stay in sync with server/src/types/index.ts
+
 // User types
 export interface User {
   id: string;

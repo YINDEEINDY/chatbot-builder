@@ -1,4 +1,6 @@
-// Node Types for Flow Builder
+// Shared types for Flow Builder
+// NOTE: Keep in sync with client/src/types/index.ts (Node/Flow types)
+
 export type NodeType =
   | 'start'
   | 'text'
@@ -12,6 +14,7 @@ export type NodeType =
 
 export interface BaseNodeData {
   label: string;
+  [key: string]: unknown;
 }
 
 export interface TextNodeData extends BaseNodeData {
@@ -65,11 +68,21 @@ export interface DelayNodeData extends BaseNodeData {
   showTyping?: boolean;
 }
 
+export type NodeData =
+  | BaseNodeData
+  | TextNodeData
+  | ImageNodeData
+  | CardNodeData
+  | QuickReplyNodeData
+  | UserInputNodeData
+  | ConditionNodeData
+  | DelayNodeData;
+
 export interface FlowNode {
   id: string;
   type: NodeType;
   position: { x: number; y: number };
-  data: BaseNodeData | TextNodeData | ImageNodeData | CardNodeData | QuickReplyNodeData | UserInputNodeData | ConditionNodeData | DelayNodeData;
+  data: NodeData;
 }
 
 export interface FlowEdge {
@@ -78,11 +91,4 @@ export interface FlowEdge {
   target: string;
   sourceHandle?: string;
   targetHandle?: string;
-}
-
-// API Response types
-export interface ApiResponse<T = unknown> {
-  success: boolean;
-  data?: T;
-  message?: string;
 }

@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.env*.local
 
 # Build outputs
 dist/
@@ -25,3 +26,9 @@ npm-debug.log*
 # Temp files
 nul
 tmpclaude-*
+
+# Uploads
+uploads/
+
+# Vercel
+.vercel
