@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/db.js';
 import { flowExecutorService } from '../services/flow-executor.service.js';
 import { conversationService } from '../services/conversation.service.js';
+import { contactService } from '../services/contact.service.js';
 import { io } from '../index.js';
 import { sanitizeMessage } from '../utils/sanitize.js';
 import { logger } from '../utils/logger.js';
@@ -151,6 +152,20 @@ export class WebhookController {
 
     if (messageText) {
       logger.debug('Webhook received message', { botId, senderId, platform, messageText });
+
+      // Ensure contact exists BEFORE creating conversation (fixes first-message bug)
+      await contactService.upsertContact(botId, senderId, undefined, undefined, platform);
+
+      // Log the incoming message to database
+      await prisma.message.create({
+        data: {
+          botId,
+          senderId,
+          content: messageText,
+          direction: 'incoming',
+          messageType,
+        },
+      });
 
       // Notify conversation service about new message and get conversation info
       const conversationInfo = await conversationService.onNewMessage(botId, senderId, messageText);

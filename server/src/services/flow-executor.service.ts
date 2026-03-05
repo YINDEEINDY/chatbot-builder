@@ -148,8 +148,8 @@ export class FlowExecutorService {
         const uiCard = currentCard as UserInputCard;
         context[uiCard.variableName] = escapeForTemplate(message);
 
-        // Log incoming message
-        await this.logMessage(bot.id, senderId, message, 'incoming');
+        // Incoming message already logged by webhook controller
+        await this.updateIncomingAnalytics(bot.id, senderId);
 
         // If there's a next block specified, go there
         if (uiCard.nextBlockId) {
@@ -408,8 +408,8 @@ export class FlowExecutorService {
     // 7. Update session
     await this.updateSession(session.id, currentNode?.id || null, context);
 
-    // 8. Log message and update analytics
-    await this.logMessage(bot.id, senderId, message, 'incoming');
+    // Incoming message already logged by webhook controller
+    await this.updateIncomingAnalytics(bot.id, senderId);
 
     return { success: true };
   }
@@ -627,6 +627,26 @@ export class FlowExecutorService {
     return prisma.userSession.update({
       where: { id: sessionId },
       data: { currentNodeId: null, currentBlockId: null, currentCardIdx: 0, context: JSON.stringify({}) },
+    });
+  }
+
+  private async updateIncomingAnalytics(botId: string, senderId: string): Promise<void> {
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+
+    // Check if this is a new unique user today (message already saved by webhook controller)
+    const messageCountToday = await prisma.message.count({
+      where: {
+        botId,
+        senderId,
+        direction: 'incoming',
+        createdAt: { gte: today },
+      },
+    });
+    const isNewUserToday = messageCountToday <= 1;
+
+    this.updateAnalytics(botId, 'incoming', isNewUserToday, today).catch((err) => {
+      logger.warn('Analytics update failed (non-critical)', { error: err.message });
     });
   }
 
