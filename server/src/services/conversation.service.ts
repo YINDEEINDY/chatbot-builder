@@ -179,8 +179,9 @@ class ConversationService {
       throw new AppError('Conversation must be in human mode to send messages', 400);
     }
 
-    // Send message via Messenger
-    await messengerService.sendText(bot, conversation.contact.senderId, content);
+    // Send message via the correct platform (Facebook Messenger or Instagram DM)
+    const platform = conversation.contact.platform || 'facebook';
+    await messengerService.sendText(bot, conversation.contact.senderId, content, platform);
 
     // Log the message
     const message = await prisma.message.create({

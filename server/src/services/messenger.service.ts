@@ -38,7 +38,20 @@ export class MessengerService {
     return bot.facebookToken;
   }
 
-  async sendText(bot: Bot, recipientId: string, text: string): Promise<void> {
+  // Determine if we should use Instagram Send API based on platform
+  private isInstagram(bot: Bot, platform?: string): boolean {
+    return platform === 'instagram' && !!bot.igUserId;
+  }
+
+  // Get the correct Send API URL based on platform
+  private getSendApiUrl(bot: Bot, token: string, platform?: string): string {
+    if (this.isInstagram(bot, platform)) {
+      return `${this.graphApiUrl}/${bot.igUserId}/messages?access_token=${token}`;
+    }
+    return `${this.graphApiUrl}/me/messages?access_token=${token}`;
+  }
+
+  async sendText(bot: Bot, recipientId: string, text: string, platform?: string): Promise<void> {
     const token = this.getToken(bot);
     if (!token) {
       logger.info(`[Mock] Sending text to ${recipientId}: ${text}`);
@@ -48,10 +61,10 @@ export class MessengerService {
     await this.callSendApi(token, {
       recipient: { id: recipientId },
       message: { text },
-    });
+    }, bot, platform);
   }
 
-  async sendImage(bot: Bot, recipientId: string, imageUrl: string): Promise<void> {
+  async sendImage(bot: Bot, recipientId: string, imageUrl: string, platform?: string): Promise<void> {
     const token = this.getToken(bot);
     if (!token) {
       logger.info(`[Mock] Sending image to ${recipientId}: ${imageUrl}`);
@@ -72,17 +85,28 @@ export class MessengerService {
           payload: { url: imageUrl, is_reusable: true },
         },
       },
-    });
+    }, bot, platform);
   }
 
   async sendQuickReplies(
     bot: Bot,
     recipientId: string,
-    data: QuickReplyData
+    data: QuickReplyData,
+    platform?: string
   ): Promise<void> {
     const token = this.getToken(bot);
     if (!token) {
       logger.info(`[Mock] Sending quick replies to ${recipientId}:`, data);
+      return;
+    }
+
+    // Instagram doesn't support quick_replies - send as text with options listed
+    if (this.isInstagram(bot, platform)) {
+      const optionsList = data.buttons.map((btn, i) => `${i + 1}. ${btn.title}`).join('\n');
+      await this.callSendApi(token, {
+        recipient: { id: recipientId },
+        message: { text: `${data.message}\n\n${optionsList}` },
+      }, bot, platform);
       return;
     }
 
@@ -98,17 +122,41 @@ export class MessengerService {
         text: data.message,
         quick_replies: quickReplies,
       },
-    });
+    }, bot, platform);
   }
 
   async sendCard(
     bot: Bot,
     recipientId: string,
-    data: CardData
+    data: CardData,
+    platform?: string
   ): Promise<void> {
     const token = this.getToken(bot);
     if (!token) {
       logger.info(`[Mock] Sending card to ${recipientId}:`, data);
+      return;
+    }
+
+    // Instagram doesn't support generic templates - send as text
+    if (this.isInstagram(bot, platform)) {
+      let text = data.title;
+      if (data.subtitle) text += `\n${data.subtitle}`;
+      if (data.buttons.length > 0) {
+        text += '\n\n' + data.buttons.map((btn) => {
+          if (btn.type === 'url' && btn.url) return `${btn.title}: ${btn.url}`;
+          return btn.title;
+        }).join('\n');
+      }
+      await this.callSendApi(token, {
+        recipient: { id: recipientId },
+        message: { text },
+      }, bot, platform);
+      if (data.imageUrl && !data.imageUrl.startsWith('data:')) {
+        await this.callSendApi(token, {
+          recipient: { id: recipientId },
+          message: { attachment: { type: 'image', payload: { url: data.imageUrl } } },
+        }, bot, platform);
+      }
       return;
     }
 
@@ -160,13 +208,14 @@ export class MessengerService {
           },
         },
       },
-    });
+    }, bot, platform);
   }
 
   async sendTypingIndicator(
     bot: Bot,
     recipientId: string,
-    isTyping: boolean
+    isTyping: boolean,
+    platform?: string
   ): Promise<void> {
     const token = this.getToken(bot);
     if (!token) {
@@ -174,14 +223,21 @@ export class MessengerService {
       return;
     }
 
+    // Instagram doesn't support typing indicators
+    if (this.isInstagram(bot, platform)) return;
+
     await this.callSendApi(token, {
       recipient: { id: recipientId },
       sender_action: isTyping ? 'typing_on' : 'typing_off',
-    });
+    }, bot, platform);
   }
 
-  private async callSendApi(accessToken: string, body: object): Promise<void> {
-    const response = await fetch(`${this.graphApiUrl}/me/messages?access_token=${accessToken}`, {
+  private async callSendApi(accessToken: string, body: object, bot?: Bot, platform?: string): Promise<void> {
+    const url = bot && platform
+      ? this.getSendApiUrl(bot, accessToken, platform)
+      : `${this.graphApiUrl}/me/messages?access_token=${accessToken}`;
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -189,8 +245,8 @@ export class MessengerService {
 
     if (!response.ok) {
       const error = await response.json();
-      logger.error('Facebook API Error:', error);
-      throw new Error(`Facebook API Error: ${JSON.stringify(error)}`);
+      logger.error('Send API Error:', { platform: platform || 'facebook', error });
+      throw new Error(`Send API Error (${platform || 'facebook'}): ${JSON.stringify(error)}`);
     }
   }
 }

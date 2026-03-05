@@ -27,14 +27,14 @@ export class FlowExecutorService {
 
       // 2. Check if we're in the middle of a Block-based conversation (waiting for user input)
       if (session.currentBlockId) {
-        return this.continueBlockExecution(bot, senderId, message, session, context);
+        return this.continueBlockExecution(bot, senderId, message, session, context, platform);
       }
 
       // 3. Try Block-based execution first (Chatfuel-style)
       const triggeredBlock = await blockService.findBlockByTrigger(bot.id, message);
       if (triggeredBlock) {
         logger.debug('Triggered block', { blockName: triggeredBlock.name, keyword: message });
-        return this.executeBlock(bot, senderId, triggeredBlock, session, context);
+        return this.executeBlock(bot, senderId, triggeredBlock, session, context, platform);
       }
 
       // 4. Check for Default Answer block
@@ -50,16 +50,16 @@ export class FlowExecutorService {
       // 5. Use Default Answer block for response
       if (defaultAnswerBlock) {
         logger.debug('Using Default Answer block');
-        return this.executeBlock(bot, senderId, defaultAnswerBlock, session, context);
+        return this.executeBlock(bot, senderId, defaultAnswerBlock, session, context, platform);
       }
 
       // 6. Fall back to Flow-based execution (should rarely reach here)
       logger.debug('Falling back to Flow-based execution', { botId: bot.id });
-      return this.executeFlowBased(bot, senderId, message, session, context);
+      return this.executeFlowBased(bot, senderId, message, session, context, platform);
     } catch (error) {
       logger.error('Unexpected flow execution error', { error, botId: bot.id });
       try {
-        await messengerService.sendText(bot, senderId, 'Sorry, something went wrong. Please try again later.');
+        await messengerService.sendText(bot, senderId, 'Sorry, something went wrong. Please try again later.', platform);
       } catch {
         // Ignore error sending error message
       }
@@ -73,7 +73,8 @@ export class FlowExecutorService {
     senderId: string,
     block: Block,
     session: UserSession,
-    context: ExecutionContext
+    context: ExecutionContext,
+    platform = 'facebook'
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const cards: BlockCard[] = JSON.parse(block.cards);
@@ -89,7 +90,7 @@ export class FlowExecutorService {
         if (card.type === 'userInput') {
           // Send the prompt and wait for user response
           const uiCard = card as UserInputCard;
-          await messengerService.sendText(bot, senderId, this.interpolate(uiCard.prompt, context));
+          await messengerService.sendText(bot, senderId, this.interpolate(uiCard.prompt, context), platform);
           await this.logMessage(bot.id, senderId, uiCard.prompt, 'outgoing');
 
           // Save session state - waiting for input at this card
@@ -98,7 +99,7 @@ export class FlowExecutorService {
         }
 
         // Execute the card
-        const result = await this.executeBlockCard(card, bot, senderId, context);
+        const result = await this.executeBlockCard(card, bot, senderId, context, platform);
 
         // If card redirects to another block, execute that block
         if (result.goToBlockId) {
@@ -106,7 +107,7 @@ export class FlowExecutorService {
           if (nextBlock) {
             // Reset card index for new block
             await this.updateBlockSession(session.id, null, 0, context);
-            return this.executeBlock(bot, senderId, nextBlock, session, context);
+            return this.executeBlock(bot, senderId, nextBlock, session, context, platform);
           }
         }
 
@@ -128,7 +129,8 @@ export class FlowExecutorService {
     senderId: string,
     message: string,
     session: UserSession,
-    context: ExecutionContext
+    context: ExecutionContext,
+    platform = 'facebook'
   ): Promise<{ success: boolean; error?: string }> {
     try {
       const block = await prisma.block.findUnique({ where: { id: session.currentBlockId! } });
@@ -154,7 +156,7 @@ export class FlowExecutorService {
           const nextBlock = await prisma.block.findUnique({ where: { id: uiCard.nextBlockId } });
           if (nextBlock) {
             await this.updateBlockSession(session.id, null, 0, context);
-            return this.executeBlock(bot, senderId, nextBlock, session, context);
+            return this.executeBlock(bot, senderId, nextBlock, session, context, platform);
           }
         }
 
@@ -167,19 +169,19 @@ export class FlowExecutorService {
 
           if (card.type === 'userInput') {
             const nextUiCard = card as UserInputCard;
-            await messengerService.sendText(bot, senderId, this.interpolate(nextUiCard.prompt, context));
+            await messengerService.sendText(bot, senderId, this.interpolate(nextUiCard.prompt, context), platform);
             await this.logMessage(bot.id, senderId, nextUiCard.prompt, 'outgoing');
             await this.updateBlockSession(session.id, block.id, i, context);
             return { success: true };
           }
 
-          const result = await this.executeBlockCard(card, bot, senderId, context);
+          const result = await this.executeBlockCard(card, bot, senderId, context, platform);
 
           if (result.goToBlockId) {
             const nextBlock = await prisma.block.findUnique({ where: { id: result.goToBlockId } });
             if (nextBlock) {
               await this.updateBlockSession(session.id, null, 0, context);
-              return this.executeBlock(bot, senderId, nextBlock, session, context);
+              return this.executeBlock(bot, senderId, nextBlock, session, context, platform);
             }
           }
         }
@@ -201,22 +203,23 @@ export class FlowExecutorService {
     card: BlockCard,
     bot: Bot,
     senderId: string,
-    context: ExecutionContext
+    context: ExecutionContext,
+    platform = 'facebook'
   ): Promise<{ goToBlockId?: string }> {
     switch (card.type) {
       case 'text': {
         const textCard = card as TextCard;
         const message = this.interpolate(textCard.text, context);
-        await messengerService.sendText(bot, senderId, message);
+        await messengerService.sendText(bot, senderId, message, platform);
         await this.logMessage(bot.id, senderId, message, 'outgoing');
         break;
       }
 
       case 'image': {
         const imageCard = card as ImageCard;
-        await messengerService.sendImage(bot, senderId, imageCard.imageUrl);
+        await messengerService.sendImage(bot, senderId, imageCard.imageUrl, platform);
         if (imageCard.caption) {
-          await messengerService.sendText(bot, senderId, this.interpolate(imageCard.caption, context));
+          await messengerService.sendText(bot, senderId, this.interpolate(imageCard.caption, context), platform);
         }
         await this.logMessage(bot.id, senderId, `[Image: ${imageCard.imageUrl}]`, 'outgoing');
         break;
@@ -234,7 +237,7 @@ export class FlowExecutorService {
             payload: btn.type === 'block' ? `BLOCK:${btn.blockId}` : btn.payload,
             url: btn.url,
           })),
-        });
+        }, platform);
         await this.logMessage(bot.id, senderId, `[Card: ${galleryCard.title}]`, 'outgoing');
         break;
       }
@@ -247,7 +250,7 @@ export class FlowExecutorService {
             title: btn.title,
             payload: btn.blockId ? `BLOCK:${btn.blockId}` : btn.title,
           })),
-        });
+        }, platform);
         await this.logMessage(bot.id, senderId, qrCard.text, 'outgoing');
         break;
       }
@@ -255,11 +258,11 @@ export class FlowExecutorService {
       case 'delay': {
         const delayCard = card as DelayCard;
         if (delayCard.showTyping) {
-          await messengerService.sendTypingIndicator(bot, senderId, true);
+          await messengerService.sendTypingIndicator(bot, senderId, true, platform);
         }
         await this.sleep(delayCard.seconds * 1000);
         if (delayCard.showTyping) {
-          await messengerService.sendTypingIndicator(bot, senderId, false);
+          await messengerService.sendTypingIndicator(bot, senderId, false, platform);
         }
         break;
       }
@@ -303,7 +306,8 @@ export class FlowExecutorService {
     senderId: string,
     message: string,
     session: UserSession,
-    context: ExecutionContext
+    context: ExecutionContext,
+    platform = 'facebook'
   ): Promise<{ success: boolean; error?: string }> {
     // 2. Find flow - check for triggered flow first, then use default or continue session
     let flow: Flow | null = null;
@@ -325,7 +329,7 @@ export class FlowExecutorService {
 
     if (!flow) {
       logger.error('No flow found for bot', { botId: bot.id });
-      await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured yet.');
+      await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured yet.', platform);
       return { success: false, error: 'No flow found' };
     }
 
@@ -342,7 +346,7 @@ export class FlowExecutorService {
       edges = JSON.parse(flow.edges as string);
     } catch (parseError) {
       logger.error('Failed to parse flow data', { error: parseError, flowId: flow.id });
-      await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your message.');
+      await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your message.', platform);
       return { success: false, error: 'Invalid flow data' };
     }
 
@@ -353,7 +357,7 @@ export class FlowExecutorService {
 
     if (!currentNode) {
       logger.error('No start node found for bot', { botId: bot.id });
-      await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured correctly.');
+      await messengerService.sendText(bot, senderId, 'Sorry, this bot is not configured correctly.', platform);
       return { success: false, error: 'No start node found' };
     }
 
@@ -374,12 +378,12 @@ export class FlowExecutorService {
       nodeCount++;
       if (nodeCount > maxNodes) {
         logger.error('Max node execution limit reached', { botId: bot.id });
-        await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your request.');
+        await messengerService.sendText(bot, senderId, 'Sorry, there was an error processing your request.', platform);
         return { success: false, error: 'Max node limit reached' };
       }
 
       try {
-        await this.executeNode(currentNode, bot, senderId, context);
+        await this.executeNode(currentNode, bot, senderId, context, platform);
       } catch (nodeError) {
         logger.error('Error executing node', { nodeId: currentNode.id, error: nodeError });
         // Continue to next node instead of crashing
@@ -397,7 +401,7 @@ export class FlowExecutorService {
     if (currentNode?.type === 'userInput') {
       const prompt = (currentNode.data as { prompt?: string }).prompt;
       if (prompt) {
-        await messengerService.sendText(bot, senderId, this.interpolate(prompt, context));
+        await messengerService.sendText(bot, senderId, this.interpolate(prompt, context), platform);
       }
     }
 
@@ -414,7 +418,8 @@ export class FlowExecutorService {
     node: FlowNode,
     bot: Bot,
     senderId: string,
-    context: ExecutionContext
+    context: ExecutionContext,
+    platform = 'facebook'
   ): Promise<void> {
     const type = node.type as NodeType;
 
@@ -422,7 +427,7 @@ export class FlowExecutorService {
       case 'text': {
         const message = (node.data as { message?: string }).message;
         if (message) {
-          await messengerService.sendText(bot, senderId, this.interpolate(message, context));
+          await messengerService.sendText(bot, senderId, this.interpolate(message, context), platform);
           await this.logMessage(bot.id, senderId, message, 'outgoing');
         }
         break;
@@ -431,7 +436,7 @@ export class FlowExecutorService {
       case 'image': {
         const imageUrl = (node.data as { imageUrl?: string }).imageUrl;
         if (imageUrl) {
-          await messengerService.sendImage(bot, senderId, imageUrl);
+          await messengerService.sendImage(bot, senderId, imageUrl, platform);
           await this.logMessage(bot.id, senderId, `[Image: ${imageUrl}]`, 'outgoing');
         }
         break;
@@ -450,7 +455,7 @@ export class FlowExecutorService {
             subtitle: cardData.subtitle ? this.interpolate(cardData.subtitle, context) : undefined,
             imageUrl: cardData.imageUrl,
             buttons: cardData.buttons || [],
-          });
+          }, platform);
           await this.logMessage(bot.id, senderId, `[Card: ${cardData.title}]`, 'outgoing');
         }
         break;
@@ -462,7 +467,7 @@ export class FlowExecutorService {
           await messengerService.sendQuickReplies(bot, senderId, {
             message: this.interpolate(data.message, context),
             buttons: data.buttons,
-          });
+          }, platform);
           await this.logMessage(bot.id, senderId, data.message, 'outgoing');
         }
         break;
@@ -475,9 +480,9 @@ export class FlowExecutorService {
 
         if (showTyping && seconds > 0) {
           // Show typing indicator during delay
-          await messengerService.sendTypingIndicator(bot, senderId, true);
+          await messengerService.sendTypingIndicator(bot, senderId, true, platform);
           await this.sleep(seconds * 1000);
-          await messengerService.sendTypingIndicator(bot, senderId, false);
+          await messengerService.sendTypingIndicator(bot, senderId, false, platform);
         } else {
           await this.sleep(seconds * 1000);
         }
