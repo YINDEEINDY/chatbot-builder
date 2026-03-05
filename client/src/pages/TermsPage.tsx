@@ -3,7 +3,7 @@ export function TermsPage() {
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Terms of Service</h1>
-        <p className="text-sm text-gray-500 mb-8">Last updated: January 15, 2026</p>
+        <p className="text-sm text-gray-500 mb-8">Last updated: March 5, 2026</p>
 
         <div className="prose prose-blue max-w-none">
           <section className="mb-8">
@@ -18,14 +18,14 @@ export function TermsPage() {
             <h2 className="text-xl font-semibold text-gray-800 mb-4">2. Description of Service</h2>
             <p className="text-gray-600 mb-4">
               KonKui is a Chatbot Builder platform that allows users to create and manage
-              automated chatbots for Facebook Pages. Our services include:
+              automated chatbots for Facebook Pages and Instagram Business Accounts. Our services include:
             </p>
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
               <li>Chatbot creation and configuration</li>
-              <li>Facebook Page integration</li>
-              <li>Automated message responses</li>
+              <li>Facebook Page and Instagram Business Account integration</li>
+              <li>Automated message responses via Facebook Messenger and Instagram Direct Messages</li>
               <li>Analytics and engagement tracking</li>
-              <li>Live chat management</li>
+              <li>Live chat management with human takeover support</li>
             </ul>
           </section>
 
@@ -43,15 +43,16 @@ export function TermsPage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">4. Facebook Integration</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">4. Facebook & Instagram Integration</h2>
             <p className="text-gray-600 mb-4">
-              When connecting your Facebook Page to our Service:
+              When connecting your Facebook Page or Instagram Business Account to our Service:
             </p>
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
-              <li>You must have admin access to the Facebook Page</li>
-              <li>You authorize us to access and manage messages on your behalf</li>
-              <li>You must comply with Facebook's Platform Terms and Policies</li>
-              <li>You are responsible for the content sent through your chatbot</li>
+              <li>You must have admin access to the Facebook Page or Instagram Business Account</li>
+              <li>You authorize us to access and manage messages on your behalf, including Facebook Messenger and Instagram Direct Messages</li>
+              <li>You must comply with Meta's Platform Terms and Policies</li>
+              <li>You are responsible for the content sent through your chatbot on both platforms</li>
+              <li>You may disconnect your Facebook Page or Instagram account at any time from the bot settings</li>
             </ul>
           </section>
 
