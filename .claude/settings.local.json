@@ -3,7 +3,27 @@
     "allow": [
       "Bash(npx prisma db push:*)",
       "Bash(npm install:*)",
-      "Bash(npm i:*)"
+      "Bash(npm i:*)",
+      "Bash(wc:*)",
+      "WebFetch(domain:developers.facebook.com)",
+      "Bash(npx tsx:*)",
+      "Bash(pnpm run dev:*)",
+      "Bash(cmd.exe //c \"taskkill /F /PID 31912\")",
+      "Bash(tree:*)",
+      "Bash(git push:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npx prisma migrate:*)",
+      "WebFetch(domain:developers.chatwoot.com)",
+      "WebFetch(domain:www.saurabhdhar.com)",
+      "Bash(tailscale funnel:*)",
+      "Bash(tailscale status:*)",
+      "Bash(powershell:*)",
+      "Bash(npx vercel:*)",
+      "Bash(npx railway:*)",
+      "WebFetch(domain:support.liveagent.com)",
+      "WebFetch(domain:docs.mixpost.app)"
     ]
   }
 }
