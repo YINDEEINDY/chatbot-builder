@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://image.thum.io/get/width/1200/crop/700/https://chatbot-builder-nine-sable.vercel.app" alt="Chatbot Builder login" width="100%" />
+  <img src="https://api.microlink.io/?url=https://chatbot-builder-nine-sable.vercel.app&screenshot=true&embed=screenshot.url&meta=false&viewport.width=1280&viewport.height=720" alt="Chatbot Builder login" width="100%" />
 </p>
 
 ---
