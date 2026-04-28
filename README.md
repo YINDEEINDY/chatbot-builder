@@ -1,162 +1,64 @@
-# ChatBot Builder
+<h1 align="center">Chatbot Builder</h1>
 
-A visual chatbot builder platform for Facebook Messenger, similar to Chatfuel but simplified.
+<p align="center">
+  Visual chatbot builder for Facebook Messenger and Instagram DM.<br/>
+  Drag-and-drop flow editor, broadcast scheduler, live human takeover.
+</p>
+
+<p align="center">
+  <a href="https://chatbot-builder-nine-sable.vercel.app"><b>Live demo →</b></a>
+</p>
+
+<p align="center">
+  <img src="https://image.thum.io/get/width/1200/crop/700/https://chatbot-builder-nine-sable.vercel.app" alt="Chatbot Builder login" width="100%" />
+</p>
+
+---
+
+## What it is
+
+Chatfuel + ManyChat are great but expensive and locked-in. This is an open, self-hostable take: visual flow editor, contact management, broadcasts, analytics, and live chat — all wired up to Facebook's Graph API v21.
 
 ## Features
 
-- Visual Flow Builder with drag-and-drop interface
-- Multiple node types: Text, Image, Quick Reply, User Input, Condition, Delay
-- Facebook Messenger integration
-- User authentication
-- Bot management
-- Analytics dashboard
+- **Visual flow editor** with drag-and-drop nodes (text, image, quick reply, user input, condition, delay) — built on @xyflow/react
+- **Block-based message composer** — reusable conversation blocks
+- **Multi-platform** — Facebook Messenger and Instagram DM from one bot
+- **Contact management** — segment by tags, custom fields
+- **Broadcast scheduler** — send messages to a segment at a scheduled time
+- **Live chat with human takeover** — Socket.IO real-time chat when AI gets out of depth
+- **Analytics dashboard** — message volume, engagement, conversion funnels
+- **Encrypted page tokens** — Facebook tokens encrypted at rest
 
-## Tech Stack
+## Stack
 
-### Frontend
-- React 18 + TypeScript
-- Vite
-- React Flow (@xyflow/react)
-- Zustand (state management)
-- Tailwind CSS
-- React Router DOM
+**Client** React 19 · React Router v7 · Zustand · @xyflow/react · Recharts · Tailwind CSS 4 · Vite  
+**Server** Express · TypeScript · Prisma · PostgreSQL (Supabase) · Socket.IO  
+**Auth** JWT · Facebook OAuth  
+**Storage** Supabase Storage  
+**Validation** Zod  
+**Logging** Winston
 
-### Backend
-- Node.js + Express
-- TypeScript
-- Prisma ORM
-- PostgreSQL
-- JWT Authentication
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- PostgreSQL database
-- Facebook Developer App (for Messenger integration)
-
-### Installation
-
-1. **Clone and install dependencies**
+## Run locally
 
 ```bash
-cd chatbot-builder
-
-# Install client dependencies
-cd client
-npm install
-
-# Install server dependencies
-cd ../server
-npm install
-```
-
-2. **Setup environment variables**
-
-Client (`client/.env`):
-```
-VITE_API_URL=http://localhost:3001/api
-```
-
-Server (`server/.env`):
-```
-DATABASE_URL="postgresql://user:password@localhost:5432/chatbot_builder?schema=public"
-JWT_SECRET="your-secret-key"
-PORT=3001
-```
-
-3. **Setup database**
-
-```bash
+# Server
 cd server
+npm install
+cp .env.example .env   # fill in Facebook app keys, JWT_SECRET, DATABASE_URL
 npx prisma db push
-npx prisma generate
-```
+npm run dev            # http://localhost:3001
 
-4. **Run the development servers**
-
-```bash
-# Terminal 1 - Server
-cd server
-npm run dev
-
-# Terminal 2 - Client
+# Client
 cd client
-npm run dev
+npm install
+npm run dev            # http://localhost:5173
 ```
 
-5. **Access the application**
+You'll need two Facebook Apps configured:
+- One for user login (`FACEBOOK_APP_ID`)
+- One for page connection (`FACEBOOK_PAGES_APP_ID`)
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3001/api
+---
 
-## Project Structure
-
-```
-chatbot-builder/
-├── client/                 # React Frontend
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── flow-builder/   # Flow editor components
-│   │   │   ├── layout/         # Layout components
-│   │   │   └── ui/             # Reusable UI components
-│   │   ├── pages/              # Page components
-│   │   ├── stores/             # Zustand stores
-│   │   ├── api/                # API client
-│   │   └── types/              # TypeScript types
-│   └── ...
-│
-├── server/                 # Node.js Backend
-│   ├── src/
-│   │   ├── controllers/    # Request handlers
-│   │   ├── services/       # Business logic
-│   │   ├── routes/         # API routes
-│   │   ├── middlewares/    # Express middlewares
-│   │   └── types/          # TypeScript types
-│   ├── prisma/
-│   │   └── schema.prisma   # Database schema
-│   └── ...
-│
-└── README.md
-```
-
-## Facebook Messenger Setup
-
-1. Go to [Facebook Developers](https://developers.facebook.com)
-2. Create a new App (Business type)
-3. Add Messenger product
-4. Create a Page Access Token
-5. Setup Webhook:
-   - URL: `https://your-server.com/api/webhook/{botId}`
-   - Verify Token: Found in bot settings
-   - Subscribe to: `messages`, `messaging_postbacks`
-
-## API Endpoints
-
-### Auth
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login
-- `GET /api/auth/me` - Get current user
-
-### Bots
-- `GET /api/bots` - List user's bots
-- `POST /api/bots` - Create bot
-- `GET /api/bots/:id` - Get bot
-- `PUT /api/bots/:id` - Update bot
-- `DELETE /api/bots/:id` - Delete bot
-
-### Flows
-- `GET /api/bots/:botId/flows` - List flows
-- `POST /api/bots/:botId/flows` - Create flow
-- `GET /api/bots/:botId/flows/:flowId` - Get flow
-- `PUT /api/bots/:botId/flows/:flowId` - Update flow
-- `DELETE /api/bots/:botId/flows/:flowId` - Delete flow
-
-### Webhook
-- `GET /api/webhook/:botId` - Webhook verification
-- `POST /api/webhook/:botId` - Receive messages
-
-## License
-
-MIT
+Built by **Yindee Sajarern** ([@YINDEEINDY](https://github.com/YINDEEINDY)).
