@@ -9,10 +9,6 @@
   <a href="https://chatbot-builder-nine-sable.vercel.app"><b>Live demo →</b></a>
 </p>
 
-<p align="center">
-  <img src="./assets/screenshot.png" alt="Chatbot Builder login" width="100%" />
-</p>
-
 ---
 
 ## What it is
