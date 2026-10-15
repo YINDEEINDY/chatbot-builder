@@ -78,7 +78,7 @@ export const updateFlowSchema = z.object({
     name: z.string().min(1).max(100).optional(),
     nodes: z.array(z.object({
       id: z.string(),
-      type: z.enum(['start', 'text', 'image', 'quickReply', 'userInput', 'condition', 'delay', 'end']),
+      type: z.enum(['start', 'message', 'choice', 'input', 'condition', 'handoff', 'end', 'text', 'image', 'quickReply', 'userInput', 'delay']),
       position: z.object({
         x: z.number(),
         y: z.number(),

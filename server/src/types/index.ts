@@ -2,6 +2,10 @@
 // NOTE: Keep in sync with client/src/types/index.ts (Node/Flow types)
 
 export type NodeType =
+  | 'message'
+  | 'choice'
+  | 'input'
+  | 'handoff'
   | 'start'
   | 'text'
   | 'image'

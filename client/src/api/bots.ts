@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ApiResponse, Bot } from '../types';
+import type { BotSettings, ApiResponse, Bot } from '../types';
 
 export const botsApi = {
   list: async () => {
@@ -17,7 +17,7 @@ export const botsApi = {
     return response.data;
   },
 
-  update: async (id: string, data: { name?: string; description?: string; isActive?: boolean }) => {
+  update: async (id: string, data: BotSettings) => {
     const response = await apiClient.put<ApiResponse<Bot>>(`/bots/${id}`, data);
     return response.data;
   },

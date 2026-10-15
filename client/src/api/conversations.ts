@@ -1,65 +1,29 @@
 import { apiClient } from './client';
-import type { ApiResponse, Conversation, Message } from '../types';
+import type { ApiResponse, Contact, Conversation, ConversationStatus, Message } from '../types';
 
-interface MessagesResponse {
-  messages: Message[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+export type Assignee = 'mine' | 'unassigned' | 'all';
+export interface ConversationList {
+  conversations: Conversation[];
+  counts: Partial<Record<ConversationStatus, number>>;
 }
 
+const base = (botId: string) => `/bots/${botId}/conversations`;
+
 export const conversationsApi = {
-  list: async (botId: string, status?: string) => {
-    const params = status ? `?status=${status}` : '';
-    const response = await apiClient.get<ApiResponse<Conversation[]>>(
-      `/bots/${botId}/conversations${params}`
-    );
-    return response.data;
+  list: async (botId: string, opts: { status?: ConversationStatus | 'all'; assignee?: Assignee; search?: string } = {}) => {
+    const params = new URLSearchParams(Object.entries(opts).filter(([, v]) => v) as [string, string][]);
+    return (await apiClient.get<ApiResponse<ConversationList>>(`${base(botId)}?${params}`)).data;
   },
-
-  get: async (botId: string, conversationId: string) => {
-    const response = await apiClient.get<ApiResponse<Conversation>>(
-      `/bots/${botId}/conversations/${conversationId}`
-    );
-    return response.data;
-  },
-
-  getMessages: async (botId: string, conversationId: string, page = 1, limit = 50) => {
-    const response = await apiClient.get<ApiResponse<MessagesResponse>>(
-      `/bots/${botId}/conversations/${conversationId}/messages?page=${page}&limit=${limit}`
-    );
-    return response.data;
-  },
-
-  takeover: async (botId: string, conversationId: string) => {
-    const response = await apiClient.put<ApiResponse<Conversation>>(
-      `/bots/${botId}/conversations/${conversationId}/takeover`
-    );
-    return response.data;
-  },
-
-  release: async (botId: string, conversationId: string) => {
-    const response = await apiClient.put<ApiResponse<Conversation>>(
-      `/bots/${botId}/conversations/${conversationId}/release`
-    );
-    return response.data;
-  },
-
-  sendMessage: async (botId: string, conversationId: string, content: string) => {
-    const response = await apiClient.post<ApiResponse<Message>>(
-      `/bots/${botId}/conversations/${conversationId}/messages`,
-      { content }
-    );
-    return response.data;
-  },
-
-  close: async (botId: string, conversationId: string) => {
-    const response = await apiClient.put<ApiResponse<Conversation>>(
-      `/bots/${botId}/conversations/${conversationId}/close`
-    );
-    return response.data;
-  },
+  getMessages: async (botId: string, conversationId: string) =>
+    (await apiClient.get<ApiResponse<{ messages: Message[] }>>(`${base(botId)}/${conversationId}/messages?limit=200`)).data,
+  takeover: async (botId: string, conversationId: string) =>
+    (await apiClient.put<ApiResponse<Conversation>>(`${base(botId)}/${conversationId}/takeover`)).data,
+  release: async (botId: string, conversationId: string) =>
+    (await apiClient.put<ApiResponse<Conversation>>(`${base(botId)}/${conversationId}/release`)).data,
+  close: async (botId: string, conversationId: string) =>
+    (await apiClient.put<ApiResponse<Conversation>>(`${base(botId)}/${conversationId}/close`)).data,
+  sendMessage: async (botId: string, conversationId: string, content: string) =>
+    (await apiClient.post<ApiResponse<Message>>(`${base(botId)}/${conversationId}/messages`, { content })).data,
+  saveAttributes: async (botId: string, contactId: string, attributes: Record<string, string>) =>
+    (await apiClient.put<ApiResponse<Contact>>(`/bots/${botId}/contacts/${contactId}/attributes`, attributes)).data,
 };

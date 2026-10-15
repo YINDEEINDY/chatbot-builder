@@ -26,10 +26,16 @@ export interface Bot {
   userId: string;
   facebookPageId?: string;
   facebookPageName?: string;
-  facebookToken?: string;
+  hasFacebookToken?: boolean;
   igUserId?: string;
   igUsername?: string;
   webhookVerifyToken: string;
+  lineConnected?: boolean;
+  welcomeFlowId?: string | null;
+  fallbackText?: string | null;
+  handoffOnFallback: boolean;
+  widgetColor: string;
+  widgetGreeting?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -38,6 +44,19 @@ export interface Bot {
     flows: number;
     messages: number;
   };
+}
+
+export interface BotSettings {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+  welcomeFlowId?: string | null;
+  fallbackText?: string | null;
+  handoffOnFallback?: boolean;
+  widgetColor?: string;
+  widgetGreeting?: string | null;
+  lineChannelSecret?: string | null;
+  lineChannelToken?: string | null;
 }
 
 // Flow types
@@ -54,83 +73,22 @@ export interface Flow {
   updatedAt: string;
 }
 
-// Node Types for Flow Builder
-export type NodeType =
-  | 'start'
-  | 'text'
-  | 'image'
-  | 'card'
-  | 'quickReply'
-  | 'userInput'
-  | 'condition'
-  | 'delay'
-  | 'end';
+// Node Types for Flow Builder (must match server/src/engine/flow-runner.ts)
+export type NodeType = 'start' | 'message' | 'choice' | 'input' | 'condition' | 'handoff' | 'end';
+export type InputKind = 'text' | 'phone' | 'email' | 'number';
+export interface ChoiceItem { id: string; label: string }
 
-export interface BaseNodeData {
-  label: string;
+export interface NodeData {
+  text?: string;
+  imageUrl?: string;
+  variable?: string;
+  items?: ChoiceItem[];
+  kind?: InputKind;
+  retryText?: string;
+  operator?: 'equals' | 'contains' | 'notEmpty';
+  value?: string;
   [key: string]: unknown;
 }
-
-export interface TextNodeData extends BaseNodeData {
-  message: string;
-}
-
-export interface ImageNodeData extends BaseNodeData {
-  imageUrl: string;
-  caption?: string;
-}
-
-export interface CardButton {
-  id: string;
-  title: string;
-  type: 'postback' | 'url';
-  payload?: string;
-  url?: string;
-}
-
-export interface CardNodeData extends BaseNodeData {
-  title: string;
-  subtitle?: string;
-  imageUrl?: string;
-  buttons: CardButton[];
-}
-
-export interface QuickReplyButton {
-  id: string;
-  title: string;
-  payload: string;
-}
-
-export interface QuickReplyNodeData extends BaseNodeData {
-  message: string;
-  buttons: QuickReplyButton[];
-}
-
-export interface UserInputNodeData extends BaseNodeData {
-  prompt: string;
-  variableName: string;
-}
-
-export interface ConditionNodeData extends BaseNodeData {
-  variable: string;
-  operator: 'equals' | 'contains' | 'startsWith' | 'endsWith';
-  value: string;
-}
-
-export interface DelayNodeData extends BaseNodeData {
-  seconds: number;
-  showTyping?: boolean;
-}
-
-export type NodeData =
-  | BaseNodeData
-  | TextNodeData
-  | ImageNodeData
-  | CardNodeData
-  | QuickReplyNodeData
-  | UserInputNodeData
-  | ConditionNodeData
-  | DelayNodeData;
 
 export interface FlowNode {
   id: string;
@@ -143,102 +101,8 @@ export interface FlowEdge {
   id: string;
   source: string;
   target: string;
-  sourceHandle?: string;
-  targetHandle?: string;
-}
-
-// Block Card types (Chatfuel-style)
-export type BlockCardType = 'text' | 'image' | 'gallery' | 'quickReply' | 'userInput' | 'delay' | 'goToBlock';
-
-export interface TextBlockCard {
-  type: 'text';
-  id: string;
-  text: string;
-}
-
-export interface ImageBlockCard {
-  type: 'image';
-  id: string;
-  imageUrl: string;
-  caption?: string;
-}
-
-export interface BlockCardButton {
-  id: string;
-  title: string;
-  type: 'postback' | 'url' | 'block';
-  payload?: string;
-  url?: string;
-  blockId?: string;
-}
-
-export interface GalleryBlockCard {
-  type: 'gallery';
-  id: string;
-  title: string;
-  subtitle?: string;
-  imageUrl?: string;
-  buttons: BlockCardButton[];
-}
-
-export interface QuickReplyBlockCard {
-  type: 'quickReply';
-  id: string;
-  text: string;
-  buttons: Array<{
-    id: string;
-    title: string;
-    blockId?: string;
-  }>;
-}
-
-export interface UserInputBlockCard {
-  type: 'userInput';
-  id: string;
-  prompt: string;
-  variableName: string;
-  nextBlockId?: string;
-}
-
-export interface DelayBlockCard {
-  type: 'delay';
-  id: string;
-  seconds: number;
-  showTyping?: boolean;
-}
-
-export interface GoToBlockCard {
-  type: 'goToBlock';
-  id: string;
-  blockId: string;
-}
-
-export type BlockCard =
-  | TextBlockCard
-  | ImageBlockCard
-  | GalleryBlockCard
-  | QuickReplyBlockCard
-  | UserInputBlockCard
-  | DelayBlockCard
-  | GoToBlockCard;
-
-// Block types (Chatfuel-style conversation blocks)
-export interface Block {
-  id: string;
-  name: string;
-  botId: string;
-  groupName?: string;
-  category?: string;
-  nodeType?: string;
-  nodeData?: string; // JSON string of NodeData for saved nodes
-  description?: string;
-  isWelcome: boolean;
-  isDefaultAnswer: boolean;
-  isEnabled: boolean;
-  cards: string; // JSON string of BlockCard[]
-  triggers: string; // JSON string of string[]
-  createdAt: string;
-  updatedAt: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
 }
 
 // Contact types
@@ -248,8 +112,9 @@ export interface Contact {
   senderId: string;
   name?: string;
   profilePic?: string;
-  platform: 'facebook' | 'instagram';
+  platform: Platform;
   lastSeenAt: string;
+  attributes: string; // JSON {variable: answer} collected by questionnaires
   messageCount: number;
   tags: string; // JSON array
   isSubscribed: boolean;
@@ -284,19 +149,24 @@ export interface Broadcast {
   updatedAt: string;
 }
 
+export type Platform = 'facebook' | 'instagram' | 'line' | 'web';
+export type ConversationStatus = 'bot' | 'pending' | 'open' | 'resolved';
+
 // Conversation types
 export interface Conversation {
   id: string;
   botId: string;
   contactId: string;
   contact: Contact;
-  status: 'bot' | 'human' | 'closed';
-  assignedTo?: string;
+  status: ConversationStatus;
+  assignedTo?: string | null;
+  waitingSince?: string | null;
   unreadCount: number;
   lastMessageAt: string;
   humanTakeoverAt?: string;
   createdAt: string;
   updatedAt: string;
+  lastMessage?: Message | null;
 }
 
 // Message types
@@ -305,9 +175,28 @@ export interface Message {
   botId: string;
   senderId: string;
   content: string;
-  direction: 'incoming' | 'outgoing';
+  direction: 'incoming' | 'outgoing' | 'internal';
   messageType: string;
+  sender: 'contact' | 'bot' | 'agent' | 'system';
+  meta?: string | null; // JSON {buttons:[{label,payload}], imageUrl}
   createdAt: string;
+}
+
+export interface CannedResponse {
+  id: string;
+  shortcut: string;
+  content: string;
+}
+
+export interface AutoReplyRule {
+  id: string;
+  name: string;
+  keywords: string[];
+  matchType: 'contains' | 'exact';
+  replyText?: string | null;
+  flowId?: string | null;
+  priority: number;
+  isActive: boolean;
 }
 
 // API Response types

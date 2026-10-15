@@ -1,3 +1,4 @@
+import type { BotSettings } from '../types';
 import { create } from 'zustand';
 import { Bot } from '../types';
 import { botsApi } from '../api/bots';
@@ -10,7 +11,7 @@ interface BotState {
   loadBots: () => Promise<void>;
   loadBot: (id: string) => Promise<void>;
   createBot: (name: string, description?: string) => Promise<Bot>;
-  updateBot: (id: string, data: { name?: string; description?: string; isActive?: boolean }) => Promise<void>;
+  updateBot: (id: string, data: BotSettings) => Promise<void>;
   deleteBot: (id: string) => Promise<void>;
   setCurrentBot: (bot: Bot | null) => void;
 }

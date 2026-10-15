@@ -36,7 +36,7 @@ class ConversationService {
 
     // Last message per contact in one query, for the list preview.
     const last = await prisma.message.findMany({
-      where: { botId, senderId: { in: conversations.map((c) => c.contact.senderId) } },
+      where: { botId, senderId: { in: conversations.map((c) => c.contact.senderId) }, direction: { not: 'internal' } },
       orderBy: { createdAt: 'desc' },
       distinct: ['senderId'],
     });

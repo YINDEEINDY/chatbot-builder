@@ -1,257 +1,84 @@
-import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, lazy, Suspense } from 'react';
+import { createBrowserRouter, createRoutesFromElements, RouterProvider, Route, Navigate, useParams } from 'react-router-dom';
 import { useAuthStore } from './stores/auth.store';
-
-// Pages
 import { LoginPage } from './pages/Login';
 import { RegisterPage } from './pages/Register';
-import { DashboardPage } from './pages/Dashboard';
-import { BotListPage } from './pages/BotList';
-import { BotDetailPage } from './pages/BotDetail';
-import { FlowEditorPage } from './pages/FlowEditorPage';
-import { BroadcastListPage } from './pages/BroadcastList';
-import { PeoplePage } from './pages/PeoplePage';
-import { LiveChatPage } from './pages/LiveChatPage';
-import { BlocksPage } from './pages/BlocksPage';
-import { BlockEditorPage } from './pages/BlockEditorPage';
-import { FlowsPage } from './pages/FlowsPage';
 import { AuthCallbackPage } from './pages/AuthCallback';
-import { GrowPage } from './pages/GrowPage';
-import { AnalyzePage } from './pages/AnalyzePage';
-import { ConfigurePage } from './pages/ConfigurePage';
-import { PagePostsPage } from './pages/PagePostsPage';
-import { KeywordsPage } from './pages/KeywordsPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { TermsPage } from './pages/TermsPage';
+import { BotListPage } from './pages/BotList';
+import { InboxPage } from './pages/InboxPage';
 
-function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore();
+// Heavier / less-used screens load on demand (the flow editor pulls in xyflow, analytics pulls in recharts).
+const FlowsPage = lazy(() => import('./pages/FlowsPage').then((m) => ({ default: m.FlowsPage })));
+const FlowEditorPage = lazy(() => import('./pages/FlowEditorPage').then((m) => ({ default: m.FlowEditorPage })));
+const AutoReplyPage = lazy(() => import('./pages/AutoReplyPage').then((m) => ({ default: m.AutoReplyPage })));
+const ChannelsPage = lazy(() => import('./pages/ChannelsPage').then((m) => ({ default: m.ChannelsPage })));
+const PeoplePage = lazy(() => import('./pages/PeoplePage').then((m) => ({ default: m.PeoplePage })));
+const BroadcastListPage = lazy(() => import('./pages/BroadcastList').then((m) => ({ default: m.BroadcastListPage })));
+const AnalyzePage = lazy(() => import('./pages/AnalyzePage').then((m) => ({ default: m.AnalyzePage })));
+const PagePostsPage = lazy(() => import('./pages/PagePostsPage').then((m) => ({ default: m.PagePostsPage })));
+const GrowPage = lazy(() => import('./pages/GrowPage').then((m) => ({ default: m.GrowPage })));
+const ConfigurePage = lazy(() => import('./pages/ConfigurePage').then((m) => ({ default: m.ConfigurePage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((m) => ({ default: m.ProfilePage })));
+const PrivacyPage = lazy(() => import('./pages/PrivacyPage').then((m) => ({ default: m.PrivacyPage })));
+const TermsPage = lazy(() => import('./pages/TermsPage').then((m) => ({ default: m.TermsPage })));
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  return <>{children}</>;
-}
-
-function PublicRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuthStore();
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-      </div>
-    );
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return <>{children}</>;
-}
-
-function App() {
-  const { loadUser } = useAuthStore();
-
-  useEffect(() => {
-    loadUser();
-  }, [loadUser]);
-
+function Spinner() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public routes */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <LoginPage />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <PublicRoute>
-              <RegisterPage />
-            </PublicRoute>
-          }
-        />
-
-        {/* OAuth callback - no auth check needed */}
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
-
-        {/* Public pages - no auth required */}
-        <Route path="/privacy" element={<PrivacyPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-
-        {/* Private routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <DashboardPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots"
-          element={
-            <PrivateRoute>
-              <BotListPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:id"
-          element={
-            <PrivateRoute>
-              <BotDetailPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/flows"
-          element={
-            <PrivateRoute>
-              <FlowsPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/flows/:flowId"
-          element={
-            <PrivateRoute>
-              <FlowEditorPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/broadcasts"
-          element={
-            <PrivateRoute>
-              <BroadcastListPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/people"
-          element={
-            <PrivateRoute>
-              <PeoplePage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/live-chat"
-          element={
-            <PrivateRoute>
-              <LiveChatPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/blocks"
-          element={
-            <PrivateRoute>
-              <BlocksPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/blocks/:blockId"
-          element={
-            <PrivateRoute>
-              <BlockEditorPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/keywords"
-          element={
-            <PrivateRoute>
-              <KeywordsPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/grow"
-          element={
-            <PrivateRoute>
-              <GrowPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/analyze"
-          element={
-            <PrivateRoute>
-              <AnalyzePage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/page-posts"
-          element={
-            <PrivateRoute>
-              <PagePostsPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/bots/:botId/settings"
-          element={
-            <PrivateRoute>
-              <ConfigurePage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <PrivateRoute>
-              <DashboardPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <PrivateRoute>
-              <ProfilePage />
-            </PrivateRoute>
-          }
-        />
-
-        {/* Redirect root to dashboard or login */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-        {/* 404 */}
-        <Route
-          path="*"
-          element={
-            <div className="min-h-screen flex items-center justify-center">
-              <div className="text-center">
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">404</h1>
-                <p className="text-gray-500">Page not found</p>
-              </div>
-            </div>
-          }
-        />
-      </Routes>
-    </BrowserRouter>
+    <div className="flex h-dvh items-center justify-center bg-paper" role="status" aria-label="กำลังโหลด">
+      <div className="h-7 w-7 animate-spin rounded-full border-2 border-jade-200 border-t-jade-600" />
+    </div>
   );
 }
 
-export default App;
+function Private({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuthStore();
+  if (isLoading) return <Spinner />;
+  return isAuthenticated ? <Suspense fallback={<Spinner />}>{children}</Suspense> : <Navigate to="/login" replace />;
+}
+
+function Public({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuthStore();
+  if (isLoading) return <Spinner />;
+  return isAuthenticated ? <Navigate to="/bots" replace /> : <>{children}</>;
+}
+
+function ToInbox() {
+  const { botId } = useParams();
+  return <Navigate to={`/bots/${botId}/inbox`} replace />;
+}
+
+const botPages: [string, React.ReactNode][] = [
+  ['inbox', <InboxPage />],
+  ['flows', <FlowsPage />],
+  ['flows/:flowId', <FlowEditorPage />],
+  ['auto-reply', <AutoReplyPage />],
+  ['people', <PeoplePage />],
+  ['channels', <ChannelsPage />],
+  ['settings', <ConfigurePage />],
+  ['broadcasts', <BroadcastListPage />],
+  ['analyze', <AnalyzePage />],
+  ['page-posts', <PagePostsPage />],
+  ['grow', <GrowPage />],
+];
+
+// Data router (needed for useBlocker in the flow editor's unsaved-changes guard).
+const router = createBrowserRouter(createRoutesFromElements(
+  <>
+    <Route path="/login" element={<Public><LoginPage /></Public>} />
+    <Route path="/register" element={<Public><RegisterPage /></Public>} />
+    <Route path="/auth/callback" element={<AuthCallbackPage />} />
+    <Route path="/privacy" element={<Suspense fallback={<Spinner />}><PrivacyPage /></Suspense>} />
+    <Route path="/terms" element={<Suspense fallback={<Spinner />}><TermsPage /></Suspense>} />
+    <Route path="/bots" element={<Private><BotListPage /></Private>} />
+    <Route path="/bots/:botId" element={<ToInbox />} />
+    {botPages.map(([path, el]) => <Route key={path} path={`/bots/:botId/${path}`} element={<Private>{el}</Private>} />)}
+    <Route path="/profile" element={<Private><ProfilePage /></Private>} />
+    <Route path="*" element={<Navigate to="/bots" replace />} />
+  </>,
+));
+
+export default function App() {
+  const { loadUser } = useAuthStore();
+  useEffect(() => { loadUser(); }, [loadUser]);
+  return <RouterProvider router={router} />;
+}

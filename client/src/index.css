@@ -1,13 +1,136 @@
 @import "tailwindcss";
 
+/*
+  ตอบไว — design tokens
+  paper/ink: cool sage neutrals (long sessions, not cream)
+  jade: actions, "มีคนดูแล"   marigold: "รอคนตอบ" (the one loud signal)   lilac: bot
+  The old pages use blue and gray utility classes, remapped here so they inherit the palette.
+*/
+@theme {
+  --font-sans: "IBM Plex Sans Thai", "Noto Sans Thai", "Leelawadee UI", Tahoma, system-ui, sans-serif;
+
+  --color-paper: #f4f6f3;
+  --color-surface: #ffffff;
+  --color-ink: #1b2530;
+  --color-ink-soft: #5b6672;
+  --color-line: #dfe4de;
+
+  --color-jade-50: #eef7f5;
+  --color-jade-100: #ddf0ec;
+  --color-jade-200: #bbe1d9;
+  --color-jade-300: #8ccbbf;
+  --color-jade-400: #4fae9f;
+  --color-jade-500: #1f907f;
+  --color-jade-600: #0f766e;
+  --color-jade-700: #0b5f58;
+  --color-jade-800: #0a4c47;
+  --color-jade-900: #083b37;
+
+  --color-marigold-50: #fef8ea;
+  --color-marigold-100: #fdefd2;
+  --color-marigold-300: #f4c96a;
+  --color-marigold-500: #d9920b;
+  --color-marigold-600: #b47506;
+  --color-marigold-700: #8a5905;
+
+  --color-lilac-50: #f6f4fd;
+  --color-lilac-100: #ece8fa;
+  --color-lilac-600: #6b5bc4;
+  --color-lilac-700: #54459f;
+
+  /* legacy pages */
+  --color-blue-50: var(--color-jade-50);
+  --color-blue-100: var(--color-jade-100);
+  --color-blue-200: var(--color-jade-200);
+  --color-blue-300: var(--color-jade-300);
+  --color-blue-400: var(--color-jade-400);
+  --color-blue-500: var(--color-jade-500);
+  --color-blue-600: var(--color-jade-600);
+  --color-blue-700: var(--color-jade-700);
+  --color-blue-800: var(--color-jade-800);
+  --color-blue-900: var(--color-jade-900);
+  --color-gray-50: #f4f6f3;
+  --color-gray-100: #ebeeea;
+  --color-gray-200: #dfe4de;
+  --color-gray-300: #c7cec6;
+  --color-gray-400: #9aa39c;
+  --color-gray-500: #6e7872;
+  --color-gray-600: #56605a;
+  --color-gray-700: #3e4842;
+  --color-gray-800: #2a332e;
+  --color-gray-900: #1b2530;
+}
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  line-height: 1.6;
+  color: var(--color-ink);
+  background: var(--color-paper);
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+
+/* Thai tone marks collide with tight tracking — never letter-space Thai. */
+* { letter-spacing: 0; }
+
+/* in the base layer so utilities (e.g. focus-visible:outline-none on an inner field) can override it */
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-jade-600);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/* ใบรับเรื่อง: a ticket with a torn top edge — the one decorative device in the app */
+.ticket {
+  position: relative;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+}
+.ticket::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: -8px;
+  height: 8px;
+  background:
+    radial-gradient(circle at 6px 0, transparent 5px, var(--color-surface) 5.5px) 0 0 / 12px 8px repeat-x;
+  filter: drop-shadow(0 -1px 0 var(--color-line));
+}
+
+.stamp {
+  display: inline-block;
+  transform: rotate(-4deg);
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  padding: 1px 8px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.scroll-thin { scrollbar-width: thin; scrollbar-color: var(--color-gray-300) transparent; }
+
+/* xyflow ships default styles for its built-in "input"/"output"/"default" node types; ours reuse those names */
+.react-flow .react-flow__node-input,
+.react-flow .react-flow__node-default,
+.react-flow .react-flow__node-output {
+  border: 0;
+  padding: 0;
+  width: auto;
+  background: transparent;
+  box-shadow: none !important;
+  border-radius: 0;
+  text-align: left;
+  font-size: inherit;
 }

@@ -190,22 +190,26 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
 
   onNodesChange: (changes) => {
+    // Measuring and selecting nodes are not edits.
+    const edits = changes.some((c) => c.type !== 'dimensions' && c.type !== 'select');
     set({
       nodes: applyNodeChanges(changes, get().nodes),
-      hasUnsavedChanges: true,
+      hasUnsavedChanges: get().hasUnsavedChanges || edits,
     });
   },
 
   onEdgesChange: (changes) => {
     set({
+      hasUnsavedChanges: get().hasUnsavedChanges || changes.some((c) => c.type !== 'select'),
       edges: applyEdgeChanges(changes, get().edges),
-      hasUnsavedChanges: true,
     });
   },
 
   onConnect: (connection) => {
+    // One arrow per exit: re-connecting a button/branch replaces its old arrow.
+    const others = get().edges.filter((e) => !(e.source === connection.source && (e.sourceHandle ?? null) === (connection.sourceHandle ?? null)));
     set({
-      edges: addEdge(connection, get().edges),
+      edges: addEdge({ ...connection, type: 'smoothstep' }, others),
       hasUnsavedChanges: true,
     });
   },

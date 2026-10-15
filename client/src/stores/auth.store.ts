@@ -156,7 +156,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isLoading: false,
         });
       }
-    } catch {
+    } catch (error) {
+      // Only a rejected token logs you out. A server that is restarting or offline must not
+      // wipe every agent's session — keep waiting and retry.
+      if ((error as { response?: { status?: number } }).response?.status !== 401) {
+        setTimeout(() => get().loadUser(), 2000);
+        return;
+      }
       clearStoredToken();
       set({
         user: null,

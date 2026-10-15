@@ -40,6 +40,9 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
+// The widget is embedded on customers' own sites: its public API accepts any origin (no cookies involved).
+app.use('/api/widget', cors({ origin: true }));
+
 // CORS Middleware
 app.use(cors({
   origin: corsOrigins,
@@ -64,6 +67,15 @@ app.use('/api', apiLimiter);
 app.get('/widget.js', (_req, res) => {
   res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   res.sendFile(path.resolve('public/widget.js'));
+});
+
+// Plain page to try the widget without a website of your own.
+app.get('/widget-demo/:botId', (req, res) => {
+  const botId = String(req.params.botId).replace(/[^a-zA-Z0-9-]/g, '');
+  res.type('html').send(`<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ทดลองแชทบนเว็บ</title><style>body{font-family:Tahoma,sans-serif;background:#f4f6f3;color:#1b2530;margin:0;padding:48px 24px}main{max-width:560px;margin:auto}</style></head>
+<body><main><h1>หน้าทดลองแชทบนเว็บ</h1><p>นี่คือหน้าตัวอย่างแทนเว็บร้านของคุณ กดปุ่มแชทมุมขวาล่างเพื่อคุยกับบอท ข้อความจะเข้าไปที่หน้าแชทของระบบเหมือนลูกค้าจริง</p></main>
+<script src="/widget.js" data-bot="${botId}" async></script></body></html>`);
 });
 
 // Serve static files from uploads directory

@@ -46,4 +46,17 @@ export const flowsApi = {
     );
     return response.data;
   },
+
+  simulate: async (botId: string, flowId: string, body: { nodes: FlowNode[]; edges: FlowEdge[]; state?: SimState; text?: string; payload?: string }) => {
+    const response = await apiClient.post<ApiResponse<SimResult>>(`/bots/${botId}/flows/${flowId}/simulate`, body);
+    return response.data.data!;
+  },
 };
+
+export interface SimState { nodeId: string | null; vars: Record<string, string>; retries: number }
+export interface SimResult {
+  out: { text: string; imageUrl?: string; buttons?: { id: string; label: string; payload: string }[] }[];
+  state: SimState;
+  saved: Record<string, string>;
+  handoff: boolean;
+}

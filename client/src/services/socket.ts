@@ -1,122 +1,47 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:3001';
+const SOCKET_URL = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:3001';
 
+/** Agent realtime: one socket, one bot room. Server events: message:new · conversation:updated · contact:updated */
 class SocketService {
   private socket: Socket | null = null;
-  private currentBotId: string | null = null;
+  private botId: string | null = null;
+  private statusListeners = new Set<(online: boolean) => void>();
 
   connect() {
-    if (this.socket?.connected) return;
-
-    // Get auth token from storage
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-
-    this.socket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
-      auth: {
-        token,
-      },
-    });
-
+    if (this.socket) return this.socket;
+    this.socket = io(SOCKET_URL, { transports: ['websocket', 'polling'], auth: { token: localStorage.getItem('token') } });
     this.socket.on('connect', () => {
-      console.log('[Socket] Connected:', this.socket?.id);
-      // Rejoin bot room if we were in one
-      if (this.currentBotId) {
-        this.joinBot(this.currentBotId);
-      }
+      if (this.botId) this.socket!.emit('join:bot', this.botId);
+      this.statusListeners.forEach((l) => l(true));
     });
-
-    this.socket.on('disconnect', () => {
-      console.log('[Socket] Disconnected');
-    });
-
-    this.socket.on('connect_error', (error) => {
-      console.error('[Socket] Connection error:', error.message);
-      // If authentication failed, don't keep retrying
-      if (error.message === 'Authentication required' || error.message === 'Invalid token') {
-        this.socket?.disconnect();
-      }
-    });
-
-    // Handle authorization errors from server
-    this.socket.on('error', (message: string) => {
-      console.error('[Socket] Server error:', message);
-    });
+    this.socket.on('disconnect', () => this.statusListeners.forEach((l) => l(false)));
+    return this.socket;
   }
 
   disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-      this.currentBotId = null;
-    }
+    this.socket?.disconnect();
+    this.socket = null;
+    this.botId = null;
   }
 
   joinBot(botId: string) {
-    if (!this.socket?.connected) {
-      this.currentBotId = botId;
-      return;
-    }
-
-    // Leave previous bot room if different
-    if (this.currentBotId && this.currentBotId !== botId) {
-      this.socket.emit('leave:bot', this.currentBotId);
-    }
-
-    this.socket.emit('join:bot', botId);
-    this.currentBotId = botId;
+    const s = this.connect();
+    if (this.botId && this.botId !== botId) s.emit('leave:bot', this.botId);
+    this.botId = botId;
+    if (s.connected) s.emit('join:bot', botId);
   }
 
-  leaveBot(botId: string) {
-    if (this.socket?.connected) {
-      this.socket.emit('leave:bot', botId);
-    }
-    if (this.currentBotId === botId) {
-      this.currentBotId = null;
-    }
+  on<T = unknown>(event: string, cb: (data: T) => void) {
+    const s = this.connect();
+    s.on(event, cb);
+    return () => { s.off(event, cb); };
   }
 
-  joinConversation(conversationId: string) {
-    if (this.socket?.connected) {
-      this.socket.emit('join:conversation', conversationId);
-    }
-  }
-
-  leaveConversation(conversationId: string) {
-    if (this.socket?.connected) {
-      this.socket.emit('leave:conversation', conversationId);
-    }
-  }
-
-  onMessage(callback: (data: {
-    botId: string;
-    senderId: string;
-    content: string;
-    direction: 'incoming' | 'outgoing';
-    conversationId?: string;
-    contactId?: string;
-    timestamp: string;
-  }) => void) {
-    this.socket?.on('message:new', callback);
-    return () => {
-      this.socket?.off('message:new', callback);
-    };
-  }
-
-  onConversationUpdate(callback: (data: {
-    conversationId: string;
-    status: string;
-    unreadCount?: number;
-  }) => void) {
-    this.socket?.on('conversation:update', callback);
-    return () => {
-      this.socket?.off('conversation:update', callback);
-    };
-  }
-
-  isConnected() {
-    return this.socket?.connected ?? false;
+  onStatus(cb: (online: boolean) => void) {
+    this.statusListeners.add(cb);
+    cb(this.socket?.connected ?? false);
+    return () => { this.statusListeners.delete(cb); };
   }
 }
 

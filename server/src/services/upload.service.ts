@@ -1,6 +1,9 @@
+import { env } from '../config/env.js';
 import { v4 as uuidv4 } from 'uuid';
 import { AppError } from '../middlewares/errorHandler.js';
-import { uploadToSupabase, deleteFromSupabase } from '../config/supabase.js';
+import { supabase, uploadToSupabase, deleteFromSupabase } from '../config/supabase.js';
+import fs from 'fs/promises';
+import path from 'path';
 
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -43,8 +46,12 @@ class UploadService {
     const id = uuidv4();
     const filename = `${id}${ext}`;
 
-    // Upload to Supabase Storage
-    const url = await uploadToSupabase(file.buffer, filename, file.mimetype);
+    // Supabase Storage when configured, otherwise local disk served at /uploads.
+    const url = supabase
+      ? await uploadToSupabase(file.buffer, filename, file.mimetype)
+      : await fs.mkdir(path.resolve(env.UPLOAD_DIR), { recursive: true })
+        .then(() => fs.writeFile(path.join(path.resolve(env.UPLOAD_DIR), filename), file.buffer))
+        .then(() => `${env.PUBLIC_URL}/uploads/${filename}`);
 
     if (!url) {
       throw new AppError('Failed to upload file to storage', 500);

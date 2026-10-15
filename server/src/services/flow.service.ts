@@ -149,9 +149,13 @@ export class FlowService {
       throw new AppError('Cannot delete the default flow', 400);
     }
 
-    await prisma.flow.delete({
-      where: { id: flowId },
-    });
+    // Nothing may keep pointing at a deleted flow: welcome setting, keyword rules, customers mid-flow.
+    await prisma.$transaction([
+      prisma.bot.updateMany({ where: { id: botId, welcomeFlowId: flowId }, data: { welcomeFlowId: null } }),
+      prisma.autoReplyRule.updateMany({ where: { botId, flowId }, data: { flowId: null } }),
+      prisma.userSession.updateMany({ where: { botId, flowId }, data: { flowId: null, currentNodeId: null, retries: 0, context: '{}' } }),
+      prisma.flow.delete({ where: { id: flowId } }),
+    ]);
 
     return { message: 'Flow deleted successfully' };
   }
