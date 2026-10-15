@@ -1,139 +1,69 @@
-# Chatbot Builder - KonKui
+# ตอบไว (repo: chatbot-builder)
 
-## Project Overview
+ระบบตอบลูกค้าสำหรับร้านค้า: แชทจาก LINE / Facebook / Instagram / เว็บไซต์ เข้ากล่องเดียว
+บอทถามด้วยปุ่มและเก็บคำตอบให้ แล้วส่งต่อให้คนตอบต่อพร้อมบริบท
+**แยกขาดจาก KonKui แล้ว (2026-10-15)** — อย่าเอาชื่อ/แอป/URL ของ KonKui กลับมา
+แผนและเหตุผลการออกแบบ: `docs/REVAMP-PLAN.md`
 
-A full-stack chatbot builder platform for Facebook Messenger and Instagram. Users create bots with visual flow editors and block-based conversation builders, manage contacts, send broadcasts, view analytics, and handle live chat with human takeover.
-
-## Architecture
-
-- **Monorepo** with two top-level directories: `client/` and `server/`
-- **Client**: React 19 + TypeScript + Vite + Tailwind CSS v4, deployed on **Vercel**
-- **Server**: Express + TypeScript + Prisma + PostgreSQL, deployed on **Render**
-- **Real-time**: Socket.IO for live chat and notifications
-- **Database**: PostgreSQL via Prisma ORM (hosted on Supabase)
-- **File storage**: Supabase Storage for uploads
-
-## Tech Stack
-
-### Client (`client/`)
-- React 19, React Router v7, Zustand (state), Axios (HTTP)
-- @xyflow/react (flow editor), Recharts (analytics), Lucide icons
-- Tailwind CSS v4 with `@tailwindcss/postcss`
-- Build: `tsc -b && vite build`
-
-### Server (`server/`)
-- Express 4, TypeScript, Prisma 6 (PostgreSQL)
-- JWT auth (jsonwebtoken + bcryptjs), Helmet, CORS, express-rate-limit
-- Winston logger, Zod validation, node-schedule (broadcasts)
-- Multer for file uploads, sanitize-html for XSS prevention
-- Dev: `tsx watch src/index.ts`
-
-## Project Structure
-
-```
-client/
-  src/
-    api/          # API client modules (auth, bots, flows, contacts, etc.)
-    components/
-      flow-builder/  # Visual flow editor nodes and panels
-      layout/        # MainLayout
-      people/        # Contact management components
-      ui/            # Reusable UI components (Button, Input, Card, etc.)
-    pages/         # Route pages (Dashboard, BotList, FlowEditor, LiveChat, etc.)
-    services/      # Socket.IO client
-    stores/        # Zustand stores (auth, bot, flow, block)
-    types/         # Shared TypeScript types
-    utils/         # Utility functions (cn)
-
-server/
-  src/
-    config/       # env.ts, db.ts (Prisma), supabase.ts
-    controllers/  # Request handlers
-    middlewares/   # auth, validate, rateLimit, errorHandler
-    routes/       # Express route definitions
-    schemas/      # Zod validation schemas
-    services/     # Business logic layer
-    types/        # Server-side types
-    utils/        # crypto, logger, sanitize
-  prisma/
-    schema.prisma # Database schema
-```
-
-## Key Patterns
-
-### Server Architecture
-- **Controller -> Service -> Prisma** pattern for all features
-- Routes are nested under `/api/bots/:botId/` for bot-scoped resources
-- Auth middleware uses JWT tokens from `Authorization: Bearer <token>` header
-- Facebook tokens are encrypted at rest using `server/src/utils/crypto.ts`
-- Two Facebook Apps: one for user login, one for page connections (KonKui App)
-
-### Client Architecture
-- Zustand stores for global state (auth, bot selection, flow editor, blocks)
-- API modules in `client/src/api/` mirror server routes
-- `PrivateRoute` wrapper for authenticated pages
-- `MainLayout` provides sidebar navigation within bot context
-
-### Database (Prisma)
-- Models: User, Bot, Flow, Block, Contact, Message, Analytics, Conversation, Broadcast, BroadcastRecipient, UserSession
-- Bot is the central entity - most resources are scoped to a bot
-- Flows store nodes/edges as JSON text fields
-- Blocks store cards (messages) as JSON text fields
-- Contacts track platform users (Facebook/Instagram) with tags as JSON
-
-## Common Commands
+## รันในเครื่อง
 
 ```bash
-# Client
-cd client && npm run dev      # Dev server on :5173
-cd client && npm run build    # Production build
-
-# Server
-cd server && npm run dev      # Dev server on :3001
-cd server && npm run build    # TypeScript compilation
-cd server && npx prisma studio  # Database GUI
-cd server && npx prisma db push # Push schema changes
-cd server && npx prisma migrate dev  # Create migration
-cd server && npx prisma generate     # Regenerate client
+cd server
+npm run db:local          # Postgres ในเครื่อง พอร์ต 5433 (embedded, ไม่ต้องลง Docker)
+npx prisma db push        # สร้างตาราง
+npx tsx scripts/seed-demo.ts   # ร้านตัวอย่าง + ลูกค้า 4 ราย · login demo@tobwai.local / Demo12345!
+npm run dev               # API :3001
+cd ../client && npm run dev    # หน้าเว็บ :5173
+# ทดลองแชทบนเว็บ: http://localhost:3001/widget-demo/<botId>
 ```
 
-## Environment Variables
+`server/.env` ชี้ฐานในเครื่อง · ค่าของ production เดิม (Supabase) ย้ายไป `server/.env.supabase` (ไม่ commit)
 
-Server requires `.env` with:
-- `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - JWT signing secret
-- `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` - Login app
-- `FACEBOOK_PAGES_APP_ID`, `FACEBOOK_PAGES_APP_SECRET` - KonKui page connection app
-- `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` - File storage
-- `CLIENT_URL` - Frontend URL for CORS
-- `PUBLIC_URL` - Server public URL
+## เทสต์
 
-## API Routes
+`cd server && npm test` — เอนจิน flow (ไม่ใช้ฐาน) + วงจรบอท↔คนเต็มรูป (ใช้ฐานในเครื่อง ต้องรัน `db:local` ก่อน)
+`cd client && npx tsc -b`
 
-All routes are prefixed with `/api`:
-- `/auth` - Login, register, Facebook OAuth
-- `/bots` - CRUD for bots
-- `/bots/:botId/flows` - Flow management
-- `/bots/:botId/blocks` - Block management
-- `/bots/:botId/contacts` - Contact management
-- `/bots/:botId/broadcasts` - Broadcast messaging
-- `/bots/:botId/conversations` - Live chat conversations
-- `/bots/:botId/analytics` - Bot analytics
-- `/bots/:botId/page-content` - Facebook page posts/comments
-- `/uploads` - File uploads
-- `/webhooks/facebook` - Facebook/Instagram webhook receiver
+## สถาปัตยกรรม
 
-## Facebook Integration
+```
+ช่องทาง (webhook ตรวจลายเซ็นจาก raw body → ตอบ 200 ก่อน → ประมวลผลทีหลัง)
+  controllers/webhook.controller.ts  FB/IG (X-Hub-Signature-256) · LINE (x-line-signature)
+  controllers/widget.controller.ts   แชทบนเว็บ (public, visitor token ลงลายเซ็น HMAC)
+        ↓ Inbound
+engine/brain.ts      dedupe externalId → เก็บข้อความ → ถ้าสถานะ pending/open บอทเงียบ
+                     ไม่งั้น: ต่อ flow ที่ค้าง / กดปุ่มเก่า → กฎคีย์เวิร์ด → flow ทักทายครั้งแรก → fallback
+engine/flow-runner.ts  ฟังก์ชันล้วน (ไม่มี DB) graph + state + input → ข้อความ + state ใหม่
+        ↓ OutMessage {text, buttons?, imageUrl?}
+channels/index.ts    deliver() → facebook.ts | line.ts (reply token ก่อน push) | web.ts (socket /widget)
+realtime.ts          Socket.IO: namespace หลัก = แอดมิน (JWT) · /widget = ผู้เยี่ยมชม
+```
 
-- **Permissions used**: pages_read_engagement, pages_show_list, pages_manage_metadata, pages_messaging, instagram_basic, instagram_manage_messages
-- **Graph API v21.0** for page content operations
-- Webhook handles: `messages`, `messaging_postbacks`, `feed` events
-- Supports both Facebook Messenger and Instagram DM
+- **สถานะบทสนทนา**: `bot` → `pending` (รอคนตอบ) → `open` (มีคนรับ) → `resolved` · ทักใหม่หลัง resolved = กลับไปบอท
+- **คำตอบจากแบบสอบถาม** เก็บใน `Contact.attributes` (JSON) — แสดงใน "ใบรับเรื่อง" ข้างแชท
+- **ปุ่ม** ส่ง payload `rd:<nodeId>:<itemId>` ไม่ใช้ข้อความบนปุ่ม (ป้ายถูกตัดตามแพลตฟอร์มได้)
+- **node ของ flow**: start · message · choice (เส้นออกต่อปุ่ม: `edge.sourceHandle = item.id`) · input (text/phone/email/number) · condition (`true`/`false`) · handoff · end — ชนิดเก่า (text/quickReply/userInput/image) ยังรันได้
+- เจ้าหน้าที่พิมพ์ตอบ = รับเรื่องอัตโนมัติ (บอทหยุดตอบรายนั้น)
 
-## Important Notes
+## กฎที่ต้องรู้
 
-- The server uses `.js` extensions in imports (ESM-style) even though source is TypeScript
-- `@types/*` packages are in `dependencies` (not devDependencies) because Render needs them during build
-- The client has a known large bundle size (~1.1 MB) - code splitting would help
-- Winston logger is used throughout the server - avoid `console.log`
-- Use `sanitize-html` for any user-generated content rendered as HTML
+- 🚨 **ห้ามลบ `model Block` / คอลัมน์เก่าออกจาก schema** — `prisma db push` จะ drop ข้อมูลบน production (บอทเดิมใช้ Block) · เพิ่มได้ ลบไม่ได้
+- 🚨 Postgres บน Windows: `initdb` ค่าเริ่มต้นเป็น WIN1252 → บันทึกภาษาไทยพัง (`22P05`) · `scripts/dev-db.mjs` บังคับ UTF8 แล้ว
+- 🚨 Postgres ไม่ยอมรันใต้บัญชี admin ของ Windows → สคริปต์สั่งผ่าน `pg_ctl` (ลดสิทธิ์ให้เอง)
+- 🚨 comment ใน CSS ห้ามมี `*/` กลางประโยค (เช่น `blue-*/gray-*`) — ปิด comment ก่อนเวลาแล้ว `@theme` ทั้งก้อนหาย
+- Production ต้องมี `FACEBOOK_PAGES_APP_SECRET` (webhook ไม่ยอมรับของที่ไม่มีลายเซ็น) และ `JWT_SECRET` จริง
+- `JWT_SECRET` ใช้สร้างกุญแจเข้ารหัส token ของเพจ/LINE ด้วย — เปลี่ยนแล้วต้องเชื่อมช่องทางใหม่
+- หน้าตา: token สีอยู่ใน `client/src/index.css` (`@theme`) · ส้มดาวเรือง (marigold) = "รอคนตอบ" ใช้ที่อื่นไม่ได้
+- import ฝั่ง server ใช้นามสกุล `.js` · log ด้วย winston (`utils/logger`)
+
+## โครงไฟล์ที่ต้องรู้
+
+| ที่ | คืออะไร |
+|---|---|
+| `server/src/engine/` | เอนจินบอท + เทสต์ |
+| `server/src/channels/` | ส่งข้อความออกแต่ละแพลตฟอร์ม |
+| `server/src/routes/replies.routes.ts` | คำตอบสำเร็จรูป + กฎตอบตามคำ + แก้คำตอบของลูกค้า |
+| `server/public/widget.js` | ปุ่มแชทฝังเว็บ (JS ล้วน shadow DOM ไม่ต้อง build) |
+| `client/src/pages/InboxPage.tsx` + `components/inbox/` | กล่องแชท 3 ช่อง |
+| `client/src/components/flow-builder/` | ตัวสร้างบอท (xyflow) + ทดลองคุย |
+| `client/src/components/ui/kit.tsx` | คลาส/คอมโพเนนต์พื้นฐานของหน้าใหม่ |

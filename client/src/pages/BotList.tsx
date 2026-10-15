@@ -1,209 +1,108 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { MessagesSquare, Plus, Store, Trash2 } from 'lucide-react';
 import { MainLayout } from '../components/layout/MainLayout';
+import { PageHeader, Field, Notice, inputCls, btnPrimary, btnGhost } from '../components/ui/kit';
 import { useBotStore } from '../stores/bot.store';
-import { Card, CardContent } from '../components/ui/Card';
-import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
-import { Bot, Plus, Search, Trash2, Edit, Workflow } from 'lucide-react';
+import { errorText } from '../api/replies';
+import { PLATFORM, initials } from '../components/inbox/format';
 
 export function BotListPage() {
   const { bots, loadBots, createBot, deleteBot, isLoading } = useBotStore();
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newBotName, setNewBotName] = useState('');
-  const [newBotDescription, setNewBotDescription] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [confirm, setConfirm] = useState<{ id: string; typed: string } | null>(null);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    loadBots();
-  }, [loadBots]);
+  useEffect(() => { loadBots(); }, [loadBots]);
 
-  const filteredBots = bots.filter(
-    (bot) =>
-      bot.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      bot.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleCreateBot = async (e: React.FormEvent) => {
+  const create = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newBotName.trim()) return;
-
-    setIsCreating(true);
+    if (!name.trim()) return;
+    setBusy(true);
+    setError('');
     try {
-      const bot = await createBot(newBotName, newBotDescription);
-      setShowCreateModal(false);
-      setNewBotName('');
-      setNewBotDescription('');
-      navigate(`/bots/${bot.id}`);
-    } finally {
-      setIsCreating(false);
+      const bot = await createBot(name.trim());
+      navigate(`/bots/${bot.id}/channels`);
+    } catch (err) {
+      setError(errorText(err));
+      setBusy(false);
     }
   };
 
-  const handleDeleteBot = async (botId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (confirm('Are you sure you want to delete this bot?')) {
-      await deleteBot(botId);
-    }
-  };
+  const channels = (b: (typeof bots)[number]) => [
+    b.lineConnected && PLATFORM.line,
+    b.facebookPageId && PLATFORM.facebook,
+    b.igUserId && PLATFORM.instagram,
+    PLATFORM.web,
+  ].filter(Boolean) as { label: string; color: string }[];
 
   return (
     <MainLayout>
-      <div className="p-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">My Bots</h1>
-            <p className="text-gray-500">Manage your chatbots</p>
-          </div>
-          <Button onClick={() => setShowCreateModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            New Bot
-          </Button>
-        </div>
+      <PageHeader
+        title="ร้านของฉัน"
+        sub="แต่ละร้านมีกล่องแชท บอท และช่องทางของตัวเอง"
+        action={!creating && <button onClick={() => setCreating(true)} className={btnPrimary}><Plus className="h-4 w-4" />เพิ่มร้าน</button>}
+      />
+      {error && <div className="mb-4"><Notice tone="error">{error}</Notice></div>}
 
-        {/* Search */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search bots..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+      {creating && (
+        <form onSubmit={create} className="mb-6 flex flex-wrap items-end gap-3 rounded-xl border border-jade-200 bg-surface p-4">
+          <div className="min-w-[240px] flex-1">
+            <Field label="ชื่อร้าน" hint="ลูกค้าจะเห็นชื่อนี้บนหน้าต่างแชทในเว็บไซต์">
+              <input autoFocus value={name} onChange={(e) => setName(e.target.value)} className={inputCls} maxLength={100} placeholder="เช่น ร้านดอกไม้ใบเตย" />
+            </Field>
           </div>
-        </div>
+          <div className="flex gap-2 pb-6">
+            <button disabled={busy || !name.trim()} className={btnPrimary}>สร้างร้าน</button>
+            <button type="button" onClick={() => setCreating(false)} className={btnGhost}>ยกเลิก</button>
+          </div>
+          <p className="w-full text-xs text-ink-soft">ระบบสร้างบอททักทายและเก็บเบอร์โทรให้ 1 ชุดพร้อมใช้ แก้ทีหลังได้</p>
+        </form>
+      )}
 
-        {/* Bot List */}
-        {isLoading ? (
-          <div className="text-center py-12 text-gray-500">Loading...</div>
-        ) : filteredBots.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Bot className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No bots found</h3>
-              <p className="text-gray-500 mb-4">
-                {searchQuery ? 'Try a different search term' : 'Create your first bot to get started'}
-              </p>
-              {!searchQuery && (
-                <Button onClick={() => setShowCreateModal(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Bot
-                </Button>
+      {isLoading && !bots.length && <p className="text-sm text-ink-soft">กำลังโหลด</p>}
+      {!isLoading && !bots.length && !creating && (
+        <div className="rounded-xl border border-dashed border-gray-300 px-6 py-16 text-center">
+          <Store className="mx-auto h-10 w-10 text-gray-300" strokeWidth={1.5} />
+          <p className="mt-3 font-medium">ยังไม่มีร้าน</p>
+          <p className="mt-1 text-sm text-ink-soft">สร้างร้านแรก แล้วต่อ LINE, Facebook หรือแชทบนเว็บ</p>
+          <button onClick={() => setCreating(true)} className={`${btnPrimary} mt-5`}><Plus className="h-4 w-4" />เพิ่มร้านแรก</button>
+        </div>
+      )}
+
+      <ul className="grid gap-3 md:grid-cols-2">
+        {bots.map((b) => (
+          <li key={b.id} className="rounded-xl border border-line bg-surface p-5">
+            <div className="flex items-start gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-jade-100 text-lg font-semibold text-jade-800">{initials(b.name)}</span>
+              <div className="min-w-0 flex-1">
+                <h2 className="truncate font-semibold">{b.name}</h2>
+                <p className={b.isActive ? 'text-sm text-jade-700' : 'text-sm text-ink-soft'}>{b.isActive ? 'เปิดรับข้อความ' : 'ปิดรับข้อความอยู่'}</p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {channels(b).map((c) => (
+                <span key={c.label} className="flex items-center gap-1.5 rounded-full border border-line px-2.5 py-0.5 text-xs"><span className="h-2 w-2 rounded-full" style={{ background: c.color }} />{c.label}</span>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Link to={`/bots/${b.id}/inbox`} className={btnPrimary}><MessagesSquare className="h-4 w-4" />เปิดแชท</Link>
+              <Link to={`/bots/${b.id}/channels`} className={btnGhost}>ตั้งค่า</Link>
+              {confirm?.id === b.id ? (
+                <span className="ml-auto flex items-center gap-2">
+                  <input value={confirm.typed} onChange={(e) => setConfirm({ id: b.id, typed: e.target.value })} placeholder="พิมพ์ชื่อร้านเพื่อยืนยัน" className={`${inputCls} w-44 py-1.5`} aria-label="พิมพ์ชื่อร้านเพื่อยืนยันการลบ" />
+                  <button disabled={confirm.typed !== b.name} onClick={async () => { await deleteBot(b.id); setConfirm(null); }} className="rounded-lg bg-red-600 px-3 py-1.5 text-sm text-white disabled:bg-gray-200 disabled:text-ink-soft">ลบถาวร</button>
+                </span>
+              ) : (
+                <button onClick={() => setConfirm({ id: b.id, typed: '' })} className="ml-auto rounded-lg p-2 text-ink-soft hover:bg-red-50 hover:text-red-700" aria-label={`ลบร้าน ${b.name}`}><Trash2 className="h-4 w-4" /></button>
               )}
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredBots.map((bot) => (
-              <Link key={bot.id} to={`/bots/${bot.id}`}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                  <CardContent className="flex flex-col h-full">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          <Bot className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{bot.name}</h3>
-                          <span
-                            className={`text-xs font-medium ${
-                              bot.isActive ? 'text-green-600' : 'text-gray-500'
-                            }`}
-                          >
-                            {bot.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <p className="text-sm text-gray-500 flex-1 mb-4">
-                      {bot.description || 'No description'}
-                    </p>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-4 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Workflow className="w-4 h-4" />
-                          {bot._count?.flows || 0}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            navigate(`/bots/${bot.id}/edit`);
-                          }}
-                          className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => handleDeleteBot(bot.id, e)}
-                          className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Create Modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-md mx-4">
-              <CardContent className="p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Bot</h2>
-                <form onSubmit={handleCreateBot} className="space-y-4">
-                  <Input
-                    label="Bot Name"
-                    id="botName"
-                    value={newBotName}
-                    onChange={(e) => setNewBotName(e.target.value)}
-                    placeholder="My Awesome Bot"
-                    required
-                  />
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description (optional)
-                    </label>
-                    <textarea
-                      value={newBotDescription}
-                      onChange={(e) => setNewBotDescription(e.target.value)}
-                      placeholder="A helpful bot for..."
-                      rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="flex gap-3 pt-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="flex-1"
-                      onClick={() => setShowCreateModal(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="flex-1" isLoading={isCreating}>
-                      Create
-                    </Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
+            </div>
+          </li>
+        ))}
+      </ul>
     </MainLayout>
   );
 }

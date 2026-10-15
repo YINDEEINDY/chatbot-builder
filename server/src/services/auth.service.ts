@@ -252,7 +252,7 @@ export class AuthService {
     return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
   }
 
-  // Get Facebook Pages OAuth URL (with page permissions) - uses KonKui App
+  // Get Facebook Pages OAuth URL (with page permissions) - uses the Pages app
   getFacebookPagesAuthUrl(botId: string): string {
     const params = new URLSearchParams({
       client_id: env.FACEBOOK_PAGES_APP_ID,
@@ -265,7 +265,7 @@ export class AuthService {
     return `https://www.facebook.com/v21.0/dialog/oauth?${params.toString()}`;
   }
 
-  // Exchange code for user token (for pages) - uses KonKui App
+  // Exchange code for user token (for pages) - uses the Pages app
   async exchangeFacebookPagesCode(code: string): Promise<string> {
     const tokenUrl = `https://graph.facebook.com/v21.0/oauth/access_token?client_id=${env.FACEBOOK_PAGES_APP_ID}&redirect_uri=${encodeURIComponent(env.FACEBOOK_PAGES_REDIRECT_URI)}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&code=${code}`;
 
@@ -349,7 +349,7 @@ export class AuthService {
     logger.info(`Page ${pageId} subscribed to webhooks successfully`);
   }
 
-  // Exchange short-lived user token for long-lived user token - uses KonKui App
+  // Exchange short-lived user token for long-lived user token - uses the Pages app
   async getLongLivedPageToken(shortLivedToken: string): Promise<string> {
     const response = await fetch(
       `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${env.FACEBOOK_PAGES_APP_ID}&client_secret=${env.FACEBOOK_PAGES_APP_SECRET}&fb_exchange_token=${shortLivedToken}`

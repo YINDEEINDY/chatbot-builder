@@ -28,14 +28,14 @@ export type InputKind = 'text' | 'phone' | 'email' | 'number';
 export const MAX_RETRIES = 2;
 const MAX_STEPS = 50;
 export const TEXT = {
-  pickButton: 'กรุณาเลือกจากปุ่มด้านล่างนะคะ',
+  pickButton: 'รบกวนเลือกจากปุ่มด้านล่างนะคะ',
   invalid: {
-    text: 'ขอข้อความอีกครั้งนะคะ',
-    phone: 'เบอร์โทรไม่ถูกต้อง ขอเป็นตัวเลข 9–10 หลักนะคะ',
-    email: 'อีเมลไม่ถูกต้อง ลองพิมพ์ใหม่อีกครั้งนะคะ',
-    number: 'ขอเป็นตัวเลขนะคะ',
+    text: 'รบกวนพิมพ์ข้อความอีกครั้งนะคะ',
+    phone: 'เบอร์โทรยังไม่ถูกต้องค่ะ รบกวนพิมพ์เป็นตัวเลข 9–10 หลักนะคะ',
+    email: 'อีเมลยังไม่ถูกต้องค่ะ รบกวนพิมพ์ใหม่อีกครั้งนะคะ',
+    number: 'รบกวนพิมพ์เป็นตัวเลขนะคะ',
   } as Record<InputKind, string>,
-  giveUp: 'ขอส่งต่อให้เจ้าหน้าที่ช่วยดูแลนะคะ รอสักครู่ค่ะ',
+  giveUp: 'ขอส่งต่อให้เจ้าหน้าที่ช่วยดูแลต่อนะคะ รอสักครู่นะคะ',
 };
 
 // Postback payload carries ids, never the label (labels get truncated/translated per platform).

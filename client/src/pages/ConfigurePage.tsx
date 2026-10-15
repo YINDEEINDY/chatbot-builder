@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { MainLayout } from '../components/layout/MainLayout';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -121,10 +121,10 @@ export function ConfigurePage() {
         setPages(response.data.pages);
         setShowPagePicker(true);
       } else {
-        setError('Failed to load Facebook Pages. Please try again.');
+        setError('โหลดรายชื่อเพจ Facebook ไม่สำเร็จ กดเชื่อมเพจใหม่อีกครั้ง');
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to fetch Facebook Pages');
+      setError(err.response?.data?.message || 'โหลดรายชื่อเพจ Facebook ไม่สำเร็จ กดเชื่อมเพจใหม่อีกครั้ง');
     } finally {
       setLoadingPages(false);
     }
@@ -140,7 +140,7 @@ export function ConfigurePage() {
         window.location.href = response.data.url;
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to start Facebook connection');
+      setError(err.response?.data?.message || 'เปิดหน้าเชื่อม Facebook ไม่สำเร็จ ลองกดเชื่อมเพจอีกครั้ง');
       setIsConnecting(false);
     }
   };
@@ -159,7 +159,7 @@ export function ConfigurePage() {
         setPageSessionId(null);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to connect Facebook Page');
+      setError(err.response?.data?.message || 'เชื่อมเพจไม่สำเร็จ ตรวจว่าคุณเป็นแอดมินของเพจนี้แล้วลองอีกครั้ง');
     } finally {
       setIsConnecting(false);
     }
@@ -167,7 +167,7 @@ export function ConfigurePage() {
 
   const handleDisconnectFacebook = async () => {
     if (!currentBot) return;
-    if (!window.confirm('Are you sure you want to disconnect this Facebook Page? Your bot will stop responding to messages.')) {
+    if (!window.confirm('ยกเลิกการเชื่อมเพจ Facebook นี้ใช่ไหม บอทจะหยุดตอบข้อความจากเพจนี้')) {
       return;
     }
     setIsDisconnecting(true);
@@ -178,7 +178,7 @@ export function ConfigurePage() {
         await loadBot(currentBot.id);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to disconnect Facebook Page');
+      setError(err.response?.data?.message || 'ยกเลิกการเชื่อมเพจไม่สำเร็จ ลองอีกครั้ง');
     } finally {
       setIsDisconnecting(false);
     }
@@ -207,7 +207,7 @@ export function ConfigurePage() {
     try {
       await updateBot(currentBot.id, { isActive: !currentBot.isActive });
     } catch (err: any) {
-      setError(err.response?.data?.message || err.message || 'Failed to update bot status');
+      setError(err.response?.data?.message || err.message || 'เปลี่ยนสถานะบอทไม่สำเร็จ ลองอีกครั้ง');
     } finally {
       setIsTogglingActive(false);
     }
@@ -234,8 +234,8 @@ export function ConfigurePage() {
       <div className="p-6 max-w-4xl">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Configure</h1>
-          <p className="text-gray-500 mt-1">Manage your bot settings and integrations</p>
+          <h1 className="text-2xl font-bold text-gray-900">ตั้งค่า Facebook และ Instagram</h1>
+          <p className="text-gray-500 mt-1">เชื่อมเพจ ตั้งค่า Webhook และการแจ้งเตือนของบอทนี้</p>
         </div>
 
         {/* Bot Status Toggle */}
@@ -247,9 +247,9 @@ export function ConfigurePage() {
                   <Power className={`w-5 h-5 ${currentBot?.isActive ? 'text-green-600' : 'text-red-600'}`} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-gray-900">Bot Status</h3>
+                  <h3 className="font-semibold text-gray-900">สถานะบอท</h3>
                   <p className={`text-sm ${currentBot?.isActive ? 'text-green-600' : 'text-red-600'}`}>
-                    {currentBot?.isActive ? 'Active - Bot is responding to messages' : 'Inactive - Bot is not responding'}
+                    {currentBot?.isActive ? 'เปิดอยู่ บอทกำลังตอบข้อความ' : 'ปิดอยู่ บอทไม่ตอบข้อความ'}
                   </p>
                 </div>
               </div>
@@ -291,33 +291,33 @@ export function ConfigurePage() {
                 <Settings className="w-5 h-5 text-gray-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">General Settings</h3>
-                <p className="text-sm text-gray-500">Basic bot configuration</p>
+                <h3 className="font-semibold text-gray-900">ข้อมูลทั่วไป</h3>
+                <p className="text-sm text-gray-500">ชื่อและคำอธิบายของบอท</p>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <Input
-              label="Bot Name"
+              label="ชื่อบอท"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="My Awesome Bot"
+              placeholder="เช่น บอทร้านกาแฟ"
             />
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description
+                คำอธิบาย
               </label>
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="What does this bot do?"
+                placeholder="บอทนี้ช่วยตอบเรื่องอะไร"
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
             <Button onClick={handleSave} isLoading={isLoading}>
               <Save className="w-4 h-4 mr-2" />
-              Save Changes
+              บันทึก
             </Button>
           </CardContent>
         </Card>
@@ -330,8 +330,8 @@ export function ConfigurePage() {
                 <Facebook className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Facebook Integration</h3>
-                <p className="text-sm text-gray-500">Connect your Facebook Page</p>
+                <h3 className="font-semibold text-gray-900">Facebook</h3>
+                <p className="text-sm text-gray-500">เชื่อมเพจ Facebook ให้บอทตอบแชท Messenger</p>
               </div>
             </div>
           </CardHeader>
@@ -343,9 +343,9 @@ export function ConfigurePage() {
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-6 h-6 text-green-600" />
                     <div className="flex-1">
-                      <p className="font-medium text-green-800">Connected to Facebook</p>
+                      <p className="font-medium text-green-800">เชื่อมกับ Facebook แล้ว</p>
                       <p className="text-sm text-green-700">
-                        Page: <span className="font-semibold">{currentBot.facebookPageName || currentBot.facebookPageId}</span>
+                        เพจ <span className="font-semibold">{currentBot.facebookPageName || currentBot.facebookPageId}</span>
                       </p>
                     </div>
                     <Button
@@ -355,15 +355,15 @@ export function ConfigurePage() {
                       isLoading={isDisconnecting}
                     >
                       <Unlink className="w-4 h-4 mr-2" />
-                      Disconnect
+                      ยกเลิกการเชื่อม
                     </Button>
                   </div>
                 </div>
 
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <p className="text-sm text-blue-800">
-                    Your bot is now active and will respond to messages on your Facebook Page.
-                    Make sure you have set up the webhook in your Facebook App.
+                    บอทจะตอบข้อความที่เข้ามาทางเพจ Facebook นี้
+                    อย่าลืมตั้งค่า Webhook ใน Facebook App ด้วย
                   </p>
                 </div>
               </>
@@ -373,20 +373,20 @@ export function ConfigurePage() {
                 <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-5 h-5 text-amber-600" />
-                    <span className="font-medium text-amber-800">Not Connected</span>
+                    <span className="font-medium text-amber-800">ยังไม่ได้เชื่อม</span>
                   </div>
                   <p className="text-sm text-amber-700 mt-1">
-                    Connect a Facebook Page to enable messaging
+                    เชื่อมเพจ Facebook ก่อน บอทถึงจะรับและตอบข้อความได้
                   </p>
                 </div>
 
                 <Button onClick={handleConnectFacebook} isLoading={isConnecting || loadingPages}>
                   <Facebook className="w-4 h-4 mr-2" />
-                  Connect Facebook Page
+                  เชื่อมเพจ Facebook
                 </Button>
 
                 <p className="text-sm text-gray-500">
-                  You will be redirected to Facebook to authorize access to your Pages.
+                  ระบบจะพาไปหน้า Facebook เพื่ออนุญาตให้เข้าถึงเพจของคุณ
                 </p>
               </>
             )}
@@ -401,8 +401,8 @@ export function ConfigurePage() {
                 <Instagram className="w-5 h-5 text-pink-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Instagram Integration</h3>
-                <p className="text-sm text-gray-500">Instagram Business Account linked via Facebook Page</p>
+                <h3 className="font-semibold text-gray-900">Instagram</h3>
+                <p className="text-sm text-gray-500">บัญชี Instagram ธุรกิจที่ผูกกับเพจ Facebook</p>
               </div>
             </div>
           </CardHeader>
@@ -412,7 +412,7 @@ export function ConfigurePage() {
                 <div className="flex items-center gap-3">
                   <CheckCircle className="w-6 h-6 text-pink-600" />
                   <div className="flex-1">
-                    <p className="font-medium text-pink-800">Instagram Connected</p>
+                    <p className="font-medium text-pink-800">เชื่อม Instagram แล้ว</p>
                     <p className="text-sm text-pink-700">
                       @<span className="font-semibold">{currentBot.igUsername}</span>
                     </p>
@@ -425,19 +425,19 @@ export function ConfigurePage() {
                     }
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    View Profile
+                    ดูโปรไฟล์
                   </Button>
                 </div>
                 <p className="text-sm text-pink-700 mt-2">
-                  Your bot will also respond to Instagram Direct Messages.
+                  บอทจะตอบข้อความ Direct ใน Instagram ด้วย
                 </p>
               </div>
             ) : (
               <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
                 <p className="text-sm text-gray-600">
                   {currentBot?.facebookPageId
-                    ? 'No Instagram Business Account is linked to this Facebook Page. Link an Instagram account to your Page in Facebook settings to enable Instagram DM support.'
-                    : 'Connect a Facebook Page first. If the page has a linked Instagram Business Account, it will be detected automatically.'}
+                    ? 'เพจนี้ยังไม่ได้ผูกบัญชี Instagram ธุรกิจ ผูกบัญชีในหน้าตั้งค่าเพจของ Facebook ก่อน บอทถึงจะตอบข้อความ Instagram ได้'
+                    : 'เชื่อมเพจ Facebook ก่อน ถ้าเพจผูกกับบัญชี Instagram ธุรกิจไว้ ระบบจะเชื่อมให้เอง'}
                 </p>
               </div>
             )}
@@ -452,8 +452,8 @@ export function ConfigurePage() {
                 <Key className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Webhook Settings</h3>
-                <p className="text-sm text-gray-500">Configure Facebook webhook</p>
+                <h3 className="font-semibold text-gray-900">ตั้งค่า Webhook</h3>
+                <p className="text-sm text-gray-500">ค่าที่ต้องนำไปใส่ใน Facebook App</p>
               </div>
             </div>
           </CardHeader>
@@ -474,11 +474,11 @@ export function ConfigurePage() {
                   variant="secondary"
                   onClick={() => handleCopy(webhookUrl, 'webhook')}
                 >
-                  {copied === 'webhook' ? 'Copied!' : <Copy className="w-4 h-4" />}
+                  {copied === 'webhook' ? 'คัดลอกแล้ว' : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Use this URL in your Facebook App webhook settings
+                นำ URL นี้ไปใส่ในหน้าตั้งค่า Webhook ของ Facebook App
               </p>
             </div>
 
@@ -500,11 +500,11 @@ export function ConfigurePage() {
                     handleCopy(currentBot?.webhookVerifyToken || '', 'verify')
                   }
                 >
-                  {copied === 'verify' ? 'Copied!' : <Copy className="w-4 h-4" />}
+                  {copied === 'verify' ? 'คัดลอกแล้ว' : <Copy className="w-4 h-4" />}
                 </Button>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Enter this token when setting up the webhook in Facebook
+                ใส่ค่านี้ตอนตั้งค่า Webhook ใน Facebook
               </p>
             </div>
 
@@ -515,7 +515,7 @@ export function ConfigurePage() {
               }
             >
               <ExternalLink className="w-4 h-4 mr-2" />
-              Open Facebook Developer Console
+              เปิด Facebook for Developers
             </Button>
           </CardContent>
         </Card>
@@ -528,8 +528,8 @@ export function ConfigurePage() {
                 <Bell className="w-5 h-5 text-orange-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Notifications</h3>
-                <p className="text-sm text-gray-500">Manage notification preferences</p>
+                <h3 className="font-semibold text-gray-900">การแจ้งเตือน</h3>
+                <p className="text-sm text-gray-500">เลือกว่าจะให้แจ้งเตือนเรื่องอะไรทางอีเมล</p>
               </div>
             </div>
           </CardHeader>
@@ -537,7 +537,7 @@ export function ConfigurePage() {
             {loadingNotifications ? (
               <div className="flex items-center gap-2 text-gray-500">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Loading notification settings...</span>
+                <span>กำลังโหลดการแจ้งเตือน</span>
               </div>
             ) : (
               <div className="space-y-3">
@@ -548,7 +548,7 @@ export function ConfigurePage() {
                     checked={notificationSettings.notifyNewMessages}
                     onChange={(e) => handleNotificationChange('notifyNewMessages', e.target.checked)}
                   />
-                  <span className="text-gray-700">Email notifications for new messages</span>
+                  <span className="text-gray-700">ส่งอีเมลเมื่อมีข้อความใหม่</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
@@ -557,7 +557,7 @@ export function ConfigurePage() {
                     checked={notificationSettings.notifyDailySummary}
                     onChange={(e) => handleNotificationChange('notifyDailySummary', e.target.checked)}
                   />
-                  <span className="text-gray-700">Daily summary email</span>
+                  <span className="text-gray-700">ส่งอีเมลสรุปประจำวัน</span>
                 </label>
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
@@ -566,7 +566,7 @@ export function ConfigurePage() {
                     checked={notificationSettings.notifyBotErrors}
                     onChange={(e) => handleNotificationChange('notifyBotErrors', e.target.checked)}
                   />
-                  <span className="text-gray-700">Alert when bot encounters an error</span>
+                  <span className="text-gray-700">แจ้งเตือนเมื่อบอททำงานผิดพลาด</span>
                 </label>
               </div>
             )}
@@ -581,20 +581,20 @@ export function ConfigurePage() {
                 <Trash2 className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-red-900">Danger Zone</h3>
-                <p className="text-sm text-red-600">Irreversible actions</p>
+                <h3 className="font-semibold text-red-900">ลบบอท</h3>
+                <p className="text-sm text-red-600">ทำแล้วย้อนกลับไม่ได้</p>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
               <div>
-                <p className="font-medium text-red-900">Delete this bot</p>
+                <p className="font-medium text-red-900">ลบบอทนี้</p>
                 <p className="text-sm text-red-600">
-                  This will permanently delete the bot and all its data
+                  บอทและข้อมูลทั้งหมดของบอทนี้จะถูกลบถาวร
                 </p>
               </div>
-              <Button variant="danger">Delete Bot</Button>
+              <Link to="/bots" className="rounded-lg border border-red-200 bg-surface px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">ไปลบที่หน้าร้านของฉัน</Link>
             </div>
           </CardContent>
         </Card>
@@ -606,7 +606,7 @@ export function ConfigurePage() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
             <div className="p-6 border-b">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold text-gray-900">Select a Facebook Page</h2>
+                <h2 className="text-lg font-semibold text-gray-900">เลือกเพจ Facebook</h2>
                 <button
                   onClick={() => {
                     setShowPagePicker(false);
@@ -619,7 +619,7 @@ export function ConfigurePage() {
                 </button>
               </div>
               <p className="text-sm text-gray-500 mt-1">
-                Choose which page you want to connect to this bot
+                เลือกเพจที่ต้องการให้บอทนี้ตอบแชท
               </p>
             </div>
 
@@ -627,7 +627,7 @@ export function ConfigurePage() {
               {pages.length === 0 ? (
                 <div className="text-center py-8">
                   <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-3" />
-                  <p className="text-gray-500">Loading your pages...</p>
+                  <p className="text-gray-500">กำลังโหลดรายชื่อเพจ</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -657,7 +657,7 @@ export function ConfigurePage() {
                             @{page.igAccount.username}
                           </p>
                         ) : (
-                          <p className="text-sm text-gray-500">ID: {page.id}</p>
+                          <p className="text-sm text-gray-500">Page ID {page.id}</p>
                         )}
                       </div>
                       <LinkIcon className="w-5 h-5 text-gray-400" />
@@ -671,7 +671,7 @@ export function ConfigurePage() {
               <div className="p-4 border-t bg-gray-50">
                 <div className="flex items-center gap-3 text-blue-600">
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Connecting page...</span>
+                  <span>กำลังเชื่อมเพจ</span>
                 </div>
               </div>
             )}

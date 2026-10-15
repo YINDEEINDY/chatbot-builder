@@ -6,6 +6,7 @@ import { useBotStore } from '../../stores/bot.store';
 import { conversationsApi } from '../../api/conversations';
 import { socketService } from '../../services/socket';
 import { cn } from '../../utils/cn';
+import { initials } from '../inbox/format';
 
 /** Waiting-for-a-person count, kept live from socket events. */
 function usePendingCount(botId: string | null) {
@@ -121,7 +122,7 @@ export function MainLayout({ children, fullBleed }: { children: React.ReactNode;
             </Link>
           )}
           <Link to="/profile" className="flex h-9 w-9 items-center justify-center rounded-full bg-jade-100 text-sm font-semibold text-jade-800" title={user?.name}>
-            {user?.name?.slice(0, 1) ?? <UserRound className="h-4 w-4" />}
+            {user?.name ? initials(user.name) : <UserRound className="h-4 w-4" />}
           </Link>
           <button onClick={() => { logout(); navigate('/login'); }} className="rounded-lg p-2 text-ink-soft hover:bg-gray-100 hover:text-ink" title="ออกจากระบบ" aria-label="ออกจากระบบ">
             <LogOut className="h-4 w-4" />

@@ -64,12 +64,12 @@ class ConversationService {
     return { messages: messages.reverse(), pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
-  /** รับเรื่อง: a person takes over; the bot stops for this contact. */
+  /** รับแชท: a person takes over; the bot stops for this contact. */
   async takeoverConversation(conversationId: string, botId: string, userId: string) {
     const { conversation } = await ownConversation(conversationId, botId, userId);
     await clearSession(botId, conversation.contact.senderId);
     if (conversation.status !== 'open' || conversation.assignedTo !== userId) {
-      await saveMessage(botId, conversation.contact, { content: 'เจ้าหน้าที่รับเรื่องแล้ว', direction: 'internal', sender: 'system', agentId: userId });
+      await saveMessage(botId, conversation.contact, { content: 'เจ้าหน้าที่รับแชทแล้ว', direction: 'internal', sender: 'system', agentId: userId });
     }
     return touch(conversationId, { status: 'open', assignedTo: userId, humanTakeoverAt: new Date(), waitingSince: null });
   }

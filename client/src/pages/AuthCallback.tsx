@@ -38,7 +38,7 @@ export function AuthCallbackPage() {
         await setToken(token);
         setStatus('success');
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate('/bots');
         }, 1000);
       } catch (err) {
         setStatus('error');

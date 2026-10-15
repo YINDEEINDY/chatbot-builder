@@ -33,7 +33,7 @@ export function Ticket({ conversation: c, onSave, onClose }: Props) {
   return (
     <aside className="flex h-full flex-col overflow-y-auto bg-paper p-4 scroll-thin" aria-label="ใบรับเรื่อง">
       {onClose && (
-        <button onClick={onClose} className="mb-2 self-end rounded-lg p-1.5 text-ink-soft hover:bg-gray-200" aria-label="ปิดข้อมูลลูกค้า"><X className="h-5 w-5" /></button>
+        <button onClick={onClose} className="mb-2 self-end rounded-lg p-1.5 text-ink-soft hover:bg-gray-200" aria-label="ปิดใบรับเรื่อง"><X className="h-5 w-5" /></button>
       )}
       <div className="mt-2 ticket px-5 pb-5 pt-4">
         <div className="flex items-start gap-3">

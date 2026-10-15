@@ -30,10 +30,10 @@
 AI ตอบเอง · broadcast ใหม่ · analytics ใหม่ · ลากวางฟรีฟอร์มแบบ Typebot เต็มรูป (ใช้ xyflow เดิม)
 
 ## เสร็จเมื่อ (definition of done)
-- [ ] `tsc` ผ่านทั้ง client และ server
-- [ ] เทสต์เอนจินผ่าน: ตอบแบบสอบถามครบ → คำตอบลง `Contact.attributes` → handoff = pending → คนตอบ บอทเงียบ → ปิดเรื่อง → ทักใหม่กลับไปบอท
-- [ ] เดโม widget รันได้ด้วยคำสั่งเดียวที่จดไว้
-- [ ] ภาพหน้าจอ: กล่องแชทที่มีบทสนทนาบอท · ปุ่มแสดงจริง · แผงคำตอบที่เก็บได้
+- [x] `tsc` ผ่านทั้ง client และ server
+- [x] เทสต์เอนจินผ่าน (18 ข้อ): ตอบแบบสอบถามครบ → คำตอบลง `Contact.attributes` → handoff = pending → คนตอบ บอทเงียบ → ปิดเรื่อง → ทักใหม่กลับไปบอท
+- [x] เดโม widget รันได้ — `/widget-demo/<botId>` (ดู CLAUDE.md)
+- [x] ภาพหน้าจอ: กล่องแชทที่มีบทสนทนาบอท · ปุ่มแสดงจริง · แผงคำตอบที่เก็บได้
 - [ ] grep `KonKui` ไม่เจอ
 - [ ] Dev Log
 - commit ทีละเฟสบน `revamp-reply-desk` · **ไม่ push ไม่ deploy** (Render/Vercel/Supabase ให้ยินดีตัดสินใจ)
@@ -41,3 +41,9 @@ AI ตอบเอง · broadcast ใหม่ · analytics ใหม่ · ล
 
 ## นอกขอบเขต (บอกในรายงาน)
 ทีมหลายคน (Bot มีเจ้าของคนเดียว) · AI ตอบ · แปลง Block เดิม → Flow · กฎความยาวป้ายภาษาไทยของ LINE (ยังไม่ยืนยันหน่วยนับ — ตรวจตอนบันทึก ตัดตอนส่ง)
+
+## ก่อนขึ้น production (ยังไม่ได้ทำ — ต้องให้ยินดีตัดสินใจ)
+1. สำรองฐาน Supabase แล้ว `prisma db push` ด้วย `.env.supabase` — schema รอบนี้ **เพิ่มอย่างเดียว** (คอลัมน์ใหม่มีค่าเริ่มต้น ไม่มีการลบ)
+2. ตั้ง `FACEBOOK_PAGES_APP_SECRET` บน server (webhook FB ไม่รับของไม่มีลายเซ็นใน production)
+3. บอทเดิมที่ใช้ Block: เอนจิน Block ถูกถอดแล้ว — บอทจะใช้ flow ทักทาย/กฎ/ส่งต่อให้คนแทน ต้องสร้าง flow ใหม่ (ยังไม่มีตัวแปลง Block → Flow)
+4. ตั้ง `VITE_SERVER_PUBLIC_URL` ฝั่ง client ให้ชี้ server จริง (ใช้สร้าง Webhook URL ของ LINE และโค้ดฝัง widget)

@@ -105,21 +105,21 @@ export function ChatPane(p: Props) {
         </div>
         <div className="ml-auto flex items-center gap-1.5">
           {(c.status === 'bot' || c.status === 'pending') && (
-            <button onClick={p.onTakeover} disabled={p.busy} className="flex items-center gap-1.5 rounded-lg bg-jade-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-jade-700 disabled:opacity-50">
-              <Hand className="h-4 w-4" /><span className="hidden sm:inline">รับเรื่อง</span>
+            <button onClick={p.onTakeover} disabled={p.busy} aria-label="รับแชท" className="flex items-center gap-1.5 rounded-lg bg-jade-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-jade-700 disabled:opacity-50">
+              <Hand className="h-4 w-4" /><span className="hidden sm:inline">รับแชท</span>
             </button>
           )}
           {c.status === 'open' && (
-            <button onClick={p.onRelease} disabled={p.busy} className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50" title="ให้บอทกลับมาตอบรายนี้">
+            <button onClick={p.onRelease} disabled={p.busy} aria-label="คืนให้บอท" className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50" title="ให้บอทกลับมาตอบรายนี้">
               <RotateCcw className="h-4 w-4" /><span className="hidden sm:inline">คืนให้บอท</span>
             </button>
           )}
           {c.status !== 'resolved' && (
-            <button onClick={p.onResolve} disabled={p.busy} className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50">
+            <button onClick={p.onResolve} disabled={p.busy} aria-label="ปิดเรื่อง" className="flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm hover:bg-gray-50 disabled:opacity-50">
               <CheckCheck className="h-4 w-4" /><span className="hidden sm:inline">ปิดเรื่อง</span>
             </button>
           )}
-          <button onClick={p.onToggleTicket} className="rounded-lg p-2 text-ink-soft hover:bg-gray-100 xl:hidden" aria-label="ข้อมูลลูกค้า"><PanelRight className="h-5 w-5" /></button>
+          <button onClick={p.onToggleTicket} className="rounded-lg p-2 text-ink-soft hover:bg-gray-100 xl:hidden" aria-label="เปิดใบรับเรื่อง"><PanelRight className="h-5 w-5" /></button>
         </div>
       </header>
 

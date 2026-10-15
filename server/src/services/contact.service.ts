@@ -47,6 +47,7 @@ class ContactService {
         orderBy: { lastSeenAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
+        include: { conversation: { select: { id: true, status: true } } },
       }),
       prisma.contact.count({ where }),
     ]);

@@ -59,6 +59,8 @@ export const parseAttrs = (s?: string): Record<string, string> => {
   try { return s ? JSON.parse(s) : {}; } catch { return {}; }
 };
 
+/** First consonant for avatars: skip Thai leading vowels (เ แ โ ใ ไ) so "เมย์" shows ม, not เ. */
 export function initials(name?: string) {
-  return (name?.trim() || 'ลูกค้า').slice(0, 1);
+  const n = (name?.trim() || 'ลูกค้า').replace(/^[เแโใไ]+/, '');
+  return [...n][0] ?? 'ล';
 }

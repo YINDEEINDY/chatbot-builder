@@ -92,7 +92,7 @@ interface Decision { out: OutMessage[]; saved: Record<string, string>; handoff: 
 
 async function decideBotReply(bot: Bot, contact: Contact, msg: Inbound, isNew: boolean): Promise<Decision | null> {
   const session = await prisma.userSession.findUnique({ where: { botId_senderId: { botId: bot.id, senderId: contact.senderId } } });
-  const vars = { name: contact.name || 'ลูกค้า', ...parse<Record<string, string>>(contact.attributes, {}), ...parse<Record<string, string>>(session?.context, {}) };
+  const vars = { name: contact.name ?? '', ...parse<Record<string, string>>(contact.attributes, {}), ...parse<Record<string, string>>(session?.context, {}) };
   const tapped = decodePayload(msg.payload);
 
   // 1) Inside a flow, or tapped a button from one → continue it.

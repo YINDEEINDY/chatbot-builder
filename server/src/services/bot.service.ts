@@ -151,7 +151,7 @@ export const botService = new BotService();
 export function starterFlow() {
   const nodes = [
     { id: 'start', type: 'start', position: { x: 40, y: 160 }, data: {} },
-    { id: 'hello', type: 'message', position: { x: 300, y: 140 }, data: { text: 'สวัสดีค่ะ คุณ{{name}} ยินดีต้อนรับนะคะ' } },
+    { id: 'hello', type: 'message', position: { x: 300, y: 140 }, data: { text: 'สวัสดีค่ะ ยินดีต้อนรับนะคะ' } },
     { id: 'topic', type: 'choice', position: { x: 620, y: 100 }, data: { text: 'วันนี้สนใจเรื่องไหนคะ', variable: 'หัวข้อ', items: [
       { id: 'price', label: 'สอบถามราคา' }, { id: 'order', label: 'สั่งซื้อ / จองคิว' }, { id: 'other', label: 'เรื่องอื่น ๆ' },
     ] } },

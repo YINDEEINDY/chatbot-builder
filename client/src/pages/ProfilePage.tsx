@@ -56,7 +56,7 @@ export function ProfilePage() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setSaveMessage({ type: 'error', text: 'Image size must be less than 5MB' });
+        setSaveMessage({ type: 'error', text: 'รูปใหญ่เกิน 5MB เลือกรูปที่เล็กกว่านี้' });
         return;
       }
 
@@ -70,7 +70,7 @@ export function ProfilePage() {
 
   const handleSaveProfile = async () => {
     if (!name.trim()) {
-      setSaveMessage({ type: 'error', text: 'Name is required' });
+      setSaveMessage({ type: 'error', text: 'กรุณาใส่ชื่อ' });
       return;
     }
 
@@ -87,12 +87,12 @@ export function ProfilePage() {
         await loadUser();
         setIsEditing(false);
         setProfilePic(null);
-        setSaveMessage({ type: 'success', text: 'Profile updated successfully' });
+        setSaveMessage({ type: 'success', text: 'บันทึกโปรไฟล์แล้ว' });
       } else {
-        setSaveMessage({ type: 'error', text: 'Failed to update profile' });
+        setSaveMessage({ type: 'error', text: 'บันทึกโปรไฟล์ไม่สำเร็จ ลองอีกครั้ง' });
       }
     } catch (error) {
-      setSaveMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to update profile' });
+      setSaveMessage({ type: 'error', text: error instanceof Error ? error.message : 'บันทึกโปรไฟล์ไม่สำเร็จ ลองอีกครั้ง' });
     } finally {
       setIsSaving(false);
     }
@@ -103,12 +103,12 @@ export function ProfilePage() {
     setPasswordMessage(null);
 
     if (newPassword.length < 6) {
-      setPasswordMessage({ type: 'error', text: 'New password must be at least 6 characters' });
+      setPasswordMessage({ type: 'error', text: 'รหัสผ่านใหม่ต้องยาวอย่างน้อย 6 ตัวอักษร' });
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordMessage({ type: 'error', text: 'Passwords do not match' });
+      setPasswordMessage({ type: 'error', text: 'รหัสผ่านใหม่สองช่องไม่ตรงกัน พิมพ์ให้ตรงกันอีกครั้ง' });
       return;
     }
 
@@ -121,16 +121,16 @@ export function ProfilePage() {
       });
 
       if (response.success) {
-        setPasswordMessage({ type: 'success', text: 'Password changed successfully' });
+        setPasswordMessage({ type: 'success', text: 'เปลี่ยนรหัสผ่านแล้ว' });
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setShowPasswordForm(false);
       } else {
-        setPasswordMessage({ type: 'error', text: 'Failed to change password' });
+        setPasswordMessage({ type: 'error', text: 'เปลี่ยนรหัสผ่านไม่สำเร็จ ตรวจรหัสผ่านปัจจุบันแล้วลองอีกครั้ง' });
       }
     } catch (error) {
-      setPasswordMessage({ type: 'error', text: error instanceof Error ? error.message : 'Failed to change password' });
+      setPasswordMessage({ type: 'error', text: error instanceof Error ? error.message : 'เปลี่ยนรหัสผ่านไม่สำเร็จ ตรวจรหัสผ่านปัจจุบันแล้วลองอีกครั้ง' });
     } finally {
       setIsChangingPassword(false);
     }
@@ -150,7 +150,7 @@ export function ProfilePage() {
       // User will be redirected to Facebook OAuth
     } catch (error) {
       console.error('Failed to connect Facebook:', error);
-      setSaveMessage({ type: 'error', text: 'Failed to connect Facebook. Please try again.' });
+      setSaveMessage({ type: 'error', text: 'เชื่อม Facebook ไม่สำเร็จ ลองกดเชื่อมอีกครั้ง' });
       setIsConnectingFacebook(false);
     }
   };
@@ -161,21 +161,22 @@ export function ProfilePage() {
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/bots')}
             className="p-2 hover:bg-gray-100 rounded-lg"
+            aria-label="กลับ"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
-            <p className="text-gray-500">Manage your account information</p>
+            <h1 className="text-2xl font-bold text-gray-900">โปรไฟล์</h1>
+            <p className="text-gray-500">ข้อมูลบัญชีของคุณ</p>
           </div>
         </div>
 
         {/* Profile Card */}
         <Card className="mb-6">
           <CardHeader>
-            <h2 className="text-lg font-semibold">Profile Information</h2>
+            <h2 className="text-lg font-semibold">ข้อมูลส่วนตัว</h2>
           </CardHeader>
           <CardContent>
             {/* Messages */}
@@ -212,6 +213,7 @@ export function ProfilePage() {
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+                        aria-label="เปลี่ยนรูปโปรไฟล์"
                       >
                         <Camera className="w-4 h-4" />
                       </button>
@@ -232,10 +234,10 @@ export function ProfilePage() {
                 {isEditing ? (
                   <>
                     <Input
-                      label="Name"
+                      label="ชื่อ"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Your name"
+                      placeholder="ชื่อของคุณ"
                     />
                     <div className="flex gap-3">
                       <Button onClick={handleSaveProfile} disabled={isSaving}>
@@ -244,10 +246,10 @@ export function ProfilePage() {
                         ) : (
                           <Save className="w-4 h-4 mr-2" />
                         )}
-                        Save Changes
+                        บันทึก
                       </Button>
                       <Button variant="secondary" onClick={handleCancelEdit}>
-                        Cancel
+                        ยกเลิก
                       </Button>
                     </div>
                   </>
@@ -257,7 +259,7 @@ export function ProfilePage() {
                       <div className="flex items-center gap-3">
                         <UserIcon className="w-5 h-5 text-gray-400" />
                         <div>
-                          <p className="text-sm text-gray-500">Name</p>
+                          <p className="text-sm text-gray-500">ชื่อ</p>
                           <p className="font-medium">{user?.name}</p>
                         </div>
                       </div>
@@ -265,7 +267,7 @@ export function ProfilePage() {
                       <div className="flex items-center gap-3">
                         <Mail className="w-5 h-5 text-gray-400" />
                         <div>
-                          <p className="text-sm text-gray-500">Email</p>
+                          <p className="text-sm text-gray-500">อีเมล</p>
                           <p className="font-medium">{user?.email}</p>
                         </div>
                       </div>
@@ -273,7 +275,7 @@ export function ProfilePage() {
                       <div className="flex items-center gap-3">
                         <Calendar className="w-5 h-5 text-gray-400" />
                         <div>
-                          <p className="text-sm text-gray-500">Member since</p>
+                          <p className="text-sm text-gray-500">สมัครเมื่อ</p>
                           <p className="font-medium">
                             {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('th-TH', {
                               year: 'numeric',
@@ -287,7 +289,7 @@ export function ProfilePage() {
                     </div>
 
                     <Button variant="secondary" onClick={() => setIsEditing(true)}>
-                      Edit Profile
+                      แก้ไขโปรไฟล์
                     </Button>
                   </>
                 )}
@@ -299,7 +301,7 @@ export function ProfilePage() {
         {/* Connected Accounts Card */}
         <Card className="mb-6">
           <CardHeader>
-            <h2 className="text-lg font-semibold">Connected Accounts</h2>
+            <h2 className="text-lg font-semibold">บัญชีที่เชื่อมไว้</h2>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -310,14 +312,14 @@ export function ProfilePage() {
                 <div>
                   <p className="font-medium">Facebook</p>
                   <p className="text-sm text-gray-500">
-                    {isFacebookUser ? 'Connected' : 'Not connected'}
+                    {isFacebookUser ? 'เชื่อมแล้ว' : 'ยังไม่ได้เชื่อม'}
                   </p>
                 </div>
               </div>
               {isFacebookUser ? (
                 <div className="flex items-center gap-2 text-green-600">
                   <CheckCircle className="w-5 h-5" />
-                  <span className="text-sm font-medium">Connected</span>
+                  <span className="text-sm font-medium">เชื่อมแล้ว</span>
                 </div>
               ) : (
                 <Button
@@ -330,13 +332,13 @@ export function ProfilePage() {
                   ) : (
                     <LinkIcon className="w-4 h-4 mr-2" />
                   )}
-                  Connect
+                  เชื่อม Facebook
                 </Button>
               )}
             </div>
             {!isFacebookUser && (
               <p className="text-sm text-gray-500 mt-3">
-                Connect your Facebook account to enable quick login and sync your profile picture.
+                เชื่อมบัญชี Facebook เพื่อเข้าสู่ระบบได้เร็วขึ้น และใช้รูปโปรไฟล์จาก Facebook
               </p>
             )}
           </CardContent>
@@ -346,7 +348,7 @@ export function ProfilePage() {
         {!isFacebookUser && (
           <Card>
             <CardHeader>
-              <h2 className="text-lg font-semibold">Security</h2>
+              <h2 className="text-lg font-semibold">รหัสผ่าน</h2>
             </CardHeader>
             <CardContent>
               {passwordMessage && (
@@ -365,27 +367,27 @@ export function ProfilePage() {
               {showPasswordForm ? (
                 <form onSubmit={handleChangePassword} className="space-y-4">
                   <Input
-                    label="Current Password"
+                    label="รหัสผ่านปัจจุบัน"
                     type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="Enter current password"
+                    placeholder="ใส่รหัสผ่านปัจจุบัน"
                     required
                   />
                   <Input
-                    label="New Password"
+                    label="รหัสผ่านใหม่"
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password (min 6 characters)"
+                    placeholder="อย่างน้อย 6 ตัวอักษร"
                     required
                   />
                   <Input
-                    label="Confirm New Password"
+                    label="ยืนยันรหัสผ่านใหม่"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
+                    placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง"
                     required
                   />
                   <div className="flex gap-3">
@@ -395,7 +397,7 @@ export function ProfilePage() {
                       ) : (
                         <Lock className="w-4 h-4 mr-2" />
                       )}
-                      Change Password
+                      เปลี่ยนรหัสผ่าน
                     </Button>
                     <Button
                       type="button"
@@ -408,14 +410,14 @@ export function ProfilePage() {
                         setPasswordMessage(null);
                       }}
                     >
-                      Cancel
+                      ยกเลิก
                     </Button>
                   </div>
                 </form>
               ) : (
                 <Button variant="secondary" onClick={() => setShowPasswordForm(true)}>
                   <Lock className="w-4 h-4 mr-2" />
-                  Change Password
+                  เปลี่ยนรหัสผ่าน
                 </Button>
               )}
             </CardContent>

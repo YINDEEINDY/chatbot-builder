@@ -106,3 +106,14 @@ test('input validation', () => {
   assert.equal(validateInput('number', '1,500'), '1500');
   assert.equal(validateInput('text', '   '), null);
 });
+
+test('button labels are clipped on Thai word boundaries, never splitting a tone mark', async () => {
+  const { clipLabel } = await import('../channels/text.js');
+  assert.equal(clipLabel('สอบถามราคา'), 'สอบถามราคา');
+  const long = clipLabel('สอบถามเรื่องการเปลี่ยนสินค้า');
+  assert.ok([...long].length <= 20);
+  assert.ok(long.endsWith('…'));
+  assert.ok(!/[่-๋ิ-ฺ็์][…]$/.test(long) || long.includes('เปลี่ยน'), long);
+  assert.ok(!/[เแโใไ]…$/.test(clipLabel('เ'.repeat(1) + 'ก้'.repeat(15))));
+  assert.ok([...clipLabel('ก้'.repeat(15))].length <= 20);
+});

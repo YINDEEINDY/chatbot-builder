@@ -8,7 +8,7 @@ export class ContactController {
       const botId = req.params.botId as string;
       const userId = req.userId!;
       const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 20;
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 1000);
       const filter = {
         tags: req.query.tags ? (req.query.tags as string).split(',') : undefined,
         isSubscribed: req.query.isSubscribed === 'true' ? true : req.query.isSubscribed === 'false' ? false : undefined,

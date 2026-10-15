@@ -60,7 +60,7 @@ export function PagePostsPage() {
         setHasMorePosts(res.data.paging.hasNext);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load posts';
+      const message = err instanceof Error ? err.message : 'โหลดโพสต์ไม่สำเร็จ';
       setError(message);
     } finally {
       setLoading(false);
@@ -114,7 +114,7 @@ export function PagePostsPage() {
 
   const handleDeleteComment = async (postId: string, commentId: string) => {
     if (!currentBot?.id) return;
-    if (!confirm('Are you sure you want to delete this comment?')) return;
+    if (!confirm('ลบคอมเมนต์นี้ใช่ไหม คอมเมนต์จะหายจากเพจด้วย')) return;
 
     setDeletingComment(commentId);
 
@@ -131,7 +131,7 @@ export function PagePostsPage() {
       }
     } catch (err) {
       console.error('Failed to delete comment:', err);
-      alert('Failed to delete comment. You may not have permission.');
+      alert('ลบคอมเมนต์ไม่สำเร็จ เพจอาจไม่มีสิทธิ์ลบคอมเมนต์นี้ ลองลบจากหน้าเพจ Facebook โดยตรง');
     } finally {
       setDeletingComment(null);
     }
@@ -156,15 +156,16 @@ export function PagePostsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Page Posts</h1>
+            <h1 className="text-2xl font-bold text-gray-900">โพสต์และคอมเมนต์เพจ</h1>
             <p className="text-gray-500 mt-1">
-              View posts and comments on your Facebook Page
+              ดูโพสต์และคอมเมนต์บนเพจ Facebook ของร้าน
             </p>
           </div>
           <button
             onClick={() => loadPosts()}
             disabled={loading || isPageNotConnected}
             className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50"
+            aria-label="โหลดใหม่"
           >
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -175,16 +176,16 @@ export function PagePostsPage() {
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
             <AlertTriangle className="w-12 h-12 text-yellow-400 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-yellow-800 mb-2">
-              Facebook Page Not Connected
+              ยังไม่ได้เชื่อมเพจ Facebook
             </h3>
             <p className="text-yellow-600 mb-4">
-              Connect a Facebook Page in the Configure page to view posts and comments.
+              เชื่อมเพจ Facebook ในหน้าตั้งค่า Facebook และ Instagram ก่อน ถึงจะดูโพสต์และคอมเมนต์ได้
             </p>
             <a
               href={`/bots/${currentBot?.id}/settings`}
               className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
             >
-              Go to Configure
+              ไปเชื่อมเพจ
             </a>
           </div>
         )}
@@ -193,7 +194,7 @@ export function PagePostsPage() {
         {loading && !isPageNotConnected && (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-            <span className="ml-3 text-gray-500">Loading posts...</span>
+            <span className="ml-3 text-gray-500">กำลังโหลดโพสต์</span>
           </div>
         )}
 
@@ -201,14 +202,14 @@ export function PagePostsPage() {
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Posts</h3>
+            <h3 className="text-lg font-semibold text-red-800 mb-2">โหลดโพสต์ไม่สำเร็จ</h3>
             <p className="text-red-600 mb-4">{error}</p>
             <button
               onClick={() => loadPosts()}
               className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
             >
               <RefreshCw className="w-4 h-4" />
-              Try Again
+              ลองอีกครั้ง
             </button>
           </div>
         )}
@@ -217,9 +218,9 @@ export function PagePostsPage() {
         {!loading && !error && !isPageNotConnected && posts.length === 0 && (
           <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg p-12 text-center">
             <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h3 className="text-lg font-semibold text-gray-500 mb-2">No Posts Yet</h3>
+            <h3 className="text-lg font-semibold text-gray-500 mb-2">ยังไม่มีโพสต์</h3>
             <p className="text-gray-400">
-              Posts from your Facebook Page will appear here.
+              โพสต์จากเพจ Facebook ของร้านจะขึ้นที่นี่
             </p>
           </div>
         )}
@@ -238,7 +239,7 @@ export function PagePostsPage() {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">
-                          {post.from?.name || 'Unknown'}
+                          {post.from?.name || 'ไม่ทราบชื่อ'}
                         </p>
                         <p className="text-sm text-gray-500">{formatDate(post.created_time)}</p>
                       </div>
@@ -267,7 +268,7 @@ export function PagePostsPage() {
                     <div className="mb-3 rounded-lg overflow-hidden bg-gray-100">
                       <img
                         src={post.full_picture}
-                        alt="Post"
+                        alt="รูปในโพสต์"
                         className="w-full max-h-96 object-cover"
                         loading="lazy"
                       />
@@ -283,13 +284,13 @@ export function PagePostsPage() {
                       {expandedPostId === post.id ? (
                         <>
                           <ChevronUp className="w-4 h-4" />
-                          Hide Comments
+                          ซ่อนคอมเมนต์
                         </>
                       ) : (
                         <>
                           <ChevronDown className="w-4 h-4" />
                           <MessageCircle className="w-4 h-4" />
-                          View Comments
+                          ดูคอมเมนต์
                         </>
                       )}
                     </button>
@@ -302,7 +303,7 @@ export function PagePostsPage() {
                       {commentsLoading === post.id && !comments[post.id] && (
                         <div className="flex items-center gap-2 py-3 text-gray-500">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Loading comments...
+                          กำลังโหลดคอมเมนต์
                         </div>
                       )}
 
@@ -316,7 +317,7 @@ export function PagePostsPage() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <span className="font-medium text-sm text-gray-900">
-                                  {comment.from?.name || 'Unknown'}
+                                  {comment.from?.name || 'ไม่ทราบชื่อ'}
                                 </span>
                                 <span className="text-xs text-gray-400">
                                   {formatDate(comment.created_time)}
@@ -328,7 +329,7 @@ export function PagePostsPage() {
                               {comment.attachment?.media?.image?.src && (
                                 <img
                                   src={comment.attachment.media.image.src}
-                                  alt="Comment attachment"
+                                  alt="รูปในคอมเมนต์"
                                   className="mt-2 max-h-40 rounded"
                                   loading="lazy"
                                 />
@@ -344,7 +345,7 @@ export function PagePostsPage() {
                               onClick={() => handleDeleteComment(post.id, comment.id)}
                               disabled={deletingComment === comment.id}
                               className="opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-opacity"
-                              title="Delete comment"
+                              title="ลบคอมเมนต์" aria-label="ลบคอมเมนต์"
                             >
                               {deletingComment === comment.id ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -368,7 +369,7 @@ export function PagePostsPage() {
                           ) : (
                             <ChevronDown className="w-3 h-3" />
                           )}
-                          Load more comments
+                          ดูคอมเมนต์เพิ่ม
                         </button>
                       )}
                     </div>
@@ -390,7 +391,7 @@ export function PagePostsPage() {
                   ) : (
                     <ChevronDown className="w-4 h-4" />
                   )}
-                  Load More Posts
+                  ดูโพสต์เพิ่ม
                 </button>
               </div>
             )}

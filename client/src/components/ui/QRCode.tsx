@@ -80,13 +80,13 @@ export function QRCodeDisplay({
           onClick={downloadPNG}
           className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
         >
-          Download PNG
+          ดาวน์โหลด PNG
         </button>
         <button
           onClick={downloadSVG}
           className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
         >
-          Download SVG
+          ดาวน์โหลด SVG
         </button>
       </div>
     </div>

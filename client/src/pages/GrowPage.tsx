@@ -32,30 +32,30 @@ export function GrowPage() {
   const growthTools = [
     {
       id: 'messenger-link',
-      title: 'Messenger Link',
-      description: 'Share a direct link to start a conversation with your bot',
+      title: 'ลิงก์ Messenger',
+      description: 'ลิงก์ที่กดแล้วเปิดแชทกับร้านใน Messenger ได้ทันที',
       icon: Link2,
       available: !!messengerLink,
     },
     {
       id: 'qr-code',
-      title: 'QR Code',
-      description: 'Generate a QR code that opens Messenger when scanned',
+      title: 'QR สำหรับสแกนทัก',
+      description: 'สแกนแล้วเปิดแชทกับร้านใน Messenger ใช้ติดหน้าร้านหรือบนสินค้าได้',
       icon: QrCode,
       available: !!messengerLink,
     },
     {
       id: 'chat-widget',
-      title: 'Chat Widget',
-      description: 'Embed a chat widget on your website',
+      title: 'ปุ่มแชทบนเว็บไซต์',
+      description: 'ปุ่มแชทมุมจอบนเว็บไซต์ของร้าน',
       icon: MessageCircle,
       available: false,
       comingSoon: true,
     },
     {
       id: 'referral',
-      title: 'Referral Program',
-      description: 'Let subscribers invite friends and earn rewards',
+      title: 'ชวนเพื่อนรับรางวัล',
+      description: 'ให้ลูกค้าชวนเพื่อนมาทักร้านแล้วได้รางวัล',
       icon: Share2,
       available: false,
       comingSoon: true,
@@ -67,9 +67,9 @@ export function GrowPage() {
       <div className="p-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Grow</h1>
+          <h1 className="text-2xl font-bold text-gray-900">ลิงก์และ QR ชวนทัก</h1>
           <p className="text-gray-500 mt-1">
-            Tools to grow your subscriber base and reach more people
+            ช่องทางให้ลูกค้าใหม่ทักเข้ามาหาร้านได้ง่ายขึ้น
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export function GrowPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">0</p>
-                  <p className="text-sm text-gray-500">Total Subscribers</p>
+                  <p className="text-sm text-gray-500">ลูกค้าทั้งหมด</p>
                 </div>
               </div>
             </CardContent>
@@ -96,7 +96,7 @@ export function GrowPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">0</p>
-                  <p className="text-sm text-gray-500">New This Week</p>
+                  <p className="text-sm text-gray-500">ลูกค้าใหม่สัปดาห์นี้</p>
                 </div>
               </div>
             </CardContent>
@@ -109,7 +109,7 @@ export function GrowPage() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">0</p>
-                  <p className="text-sm text-gray-500">Link Clicks</p>
+                  <p className="text-sm text-gray-500">คนกดลิงก์</p>
                 </div>
               </div>
             </CardContent>
@@ -130,7 +130,7 @@ export function GrowPage() {
                       {tool.title}
                       {tool.comingSoon && (
                         <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
-                          Coming Soon
+                          เร็ว ๆ นี้
                         </span>
                       )}
                     </h3>
@@ -156,7 +156,7 @@ export function GrowPage() {
                             onClick={() => handleCopy(messengerLink, 'messenger-link')}
                           >
                             {copied === 'messenger-link' ? (
-                              'Copied!'
+                              'คัดลอกแล้ว'
                             ) : (
                               <Copy className="w-4 h-4" />
                             )}
@@ -170,12 +170,12 @@ export function GrowPage() {
                           </Button>
                         </div>
                         <p className="text-xs text-gray-500">
-                          Share this link on social media, email, or your website
+                          แชร์ลิงก์นี้ในโพสต์ ไบโอ อีเมล หรือเว็บไซต์ของร้าน
                         </p>
                       </>
                     ) : (
                       <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
-                        Connect a Facebook Page in Configure to get your Messenger link
+                        เชื่อมเพจ Facebook ในหน้าตั้งค่า Facebook และ Instagram ก่อน ถึงจะได้ลิงก์ Messenger
                       </p>
                     )}
                   </div>
@@ -187,13 +187,13 @@ export function GrowPage() {
                       <div className="flex items-start gap-4">
                         <QRCodeDisplay value={messengerLink} size={128} />
                         <div className="text-sm text-gray-500 mt-2">
-                          <p className="font-medium text-gray-700 mb-1">Scan to chat</p>
-                          <p>Users can scan this QR code with their phone camera to start a conversation with your bot.</p>
+                          <p className="font-medium text-gray-700 mb-1">สแกนเพื่อทักแชท</p>
+                          <p>ลูกค้าสแกน QR นี้ด้วยกล้องมือถือ แล้วจะเปิดแชทกับร้านได้ทันที</p>
                         </div>
                       </div>
                     ) : (
                       <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg">
-                        Connect a Facebook Page in Configure to generate QR code
+                        เชื่อมเพจ Facebook ในหน้าตั้งค่า Facebook และ Instagram ก่อน ถึงจะสร้าง QR ได้
                       </p>
                     )}
                   </div>
@@ -201,7 +201,7 @@ export function GrowPage() {
 
                 {tool.comingSoon && (
                   <p className="text-sm text-gray-500">
-                    This feature is under development and will be available soon.
+                    กำลังพัฒนา จะเปิดให้ใช้เร็ว ๆ นี้
                   </p>
                 )}
               </CardContent>

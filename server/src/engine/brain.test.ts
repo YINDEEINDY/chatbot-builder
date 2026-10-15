@@ -43,7 +43,7 @@ after(async () => {
 test('first message runs the welcome questionnaire with buttons', async () => {
   await say('สวัสดีค่ะ', { name: 'มานี' });
   const out = lastSent();
-  assert.match(out[0].text, /สวัสดีค่ะ คุณมานี/);
+  assert.match(out[0].text, /ยินดีต้อนรับ/);
   assert.deepEqual(out[1].buttons?.map((b) => b.label), ['สอบถามราคา', 'สั่งซื้อ / จองคิว', 'เรื่องอื่น ๆ']);
   assert.equal((await state()).conversation.status, 'bot');
 });
@@ -56,7 +56,7 @@ test('tap → phone (retry once) → answers on contact → handed to a person',
   assert.equal(tapMsg?.content, 'สอบถามราคา', 'button label is stored for postbacks');
 
   await say('ไม่บอก');
-  assert.match(lastSent()[0].text, /เบอร์โทรไม่ถูกต้อง/);
+  assert.match(lastSent()[0].text, /เบอร์โทรยังไม่ถูกต้อง/);
   await say('089 999 1234');
 
   const s = await state();

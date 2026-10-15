@@ -2,153 +2,143 @@ export function TermsPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-md p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Terms of Service</h1>
-        <p className="text-sm text-gray-500 mb-8">Last updated: March 5, 2026</p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">ข้อตกลงการใช้งาน</h1>
+        <p className="text-sm text-gray-500 mb-8">ปรับปรุงล่าสุด 5 มีนาคม 2569</p>
 
         <div className="prose prose-blue max-w-none">
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">1. Acceptance of Terms</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">1. การยอมรับข้อตกลง</h2>
             <p className="text-gray-600 mb-4">
-              By accessing or using KonKui ("the Service"), you agree to be bound by these
-              Terms of Service. If you do not agree to these terms, please do not use our Service.
+              เมื่อคุณเข้าใช้งานตอบไว (“บริการ”) ถือว่าคุณยอมรับข้อตกลงการใช้งานนี้
+              ถ้าไม่ยอมรับ กรุณาอย่าใช้บริการ
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">2. Description of Service</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">2. บริการของเรา</h2>
             <p className="text-gray-600 mb-4">
-              KonKui is a Chatbot Builder platform that allows users to create and manage
-              automated chatbots for Facebook Pages and Instagram Business Accounts. Our services include:
+              ตอบไวเป็นระบบตอบลูกค้าสำหรับร้านค้า ใช้สร้างและจัดการบอทตอบแชทอัตโนมัติ
+              สำหรับเพจ Facebook บัญชี Instagram ธุรกิจ และช่องทางอื่น บริการประกอบด้วย
             </p>
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
-              <li>Chatbot creation and configuration</li>
-              <li>Facebook Page and Instagram Business Account integration</li>
-              <li>Automated message responses via Facebook Messenger and Instagram Direct Messages</li>
-              <li>Analytics and engagement tracking</li>
-              <li>Live chat management with human takeover support</li>
+              <li>สร้างและตั้งค่าบอทตอบแชท</li>
+              <li>เชื่อมเพจ Facebook และบัญชี Instagram ธุรกิจ</li>
+              <li>ตอบข้อความอัตโนมัติทาง Facebook Messenger และ Instagram Direct</li>
+              <li>สถิติข้อความและลูกค้า</li>
+              <li>กล่องแชทที่ให้เจ้าหน้าที่รับเรื่องต่อจากบอท</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">3. User Accounts</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">3. บัญชีผู้ใช้</h2>
             <p className="text-gray-600 mb-4">
-              To use our Service, you must:
+              ในการใช้บริการ คุณต้อง
             </p>
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
-              <li>Create an account with accurate information</li>
-              <li>Be at least 18 years old or have parental consent</li>
-              <li>Keep your login credentials secure</li>
-              <li>Notify us immediately of any unauthorized access</li>
+              <li>สมัครบัญชีด้วยข้อมูลที่ถูกต้อง</li>
+              <li>มีอายุ 18 ปีขึ้นไป หรือได้รับความยินยอมจากผู้ปกครอง</li>
+              <li>เก็บรหัสผ่านและข้อมูลเข้าสู่ระบบไว้ให้ปลอดภัย</li>
+              <li>แจ้งผู้ดูแลระบบทันทีเมื่อพบว่ามีคนเข้าบัญชีโดยไม่ได้รับอนุญาต</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">4. Facebook & Instagram Integration</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">4. การเชื่อม Facebook และ Instagram</h2>
             <p className="text-gray-600 mb-4">
-              When connecting your Facebook Page or Instagram Business Account to our Service:
+              เมื่อคุณเชื่อมเพจ Facebook หรือบัญชี Instagram ธุรกิจเข้ากับบริการ
             </p>
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
-              <li>You must have admin access to the Facebook Page or Instagram Business Account</li>
-              <li>You authorize us to access and manage messages on your behalf, including Facebook Messenger and Instagram Direct Messages</li>
-              <li>You must comply with Meta's Platform Terms and Policies</li>
-              <li>You are responsible for the content sent through your chatbot on both platforms</li>
-              <li>You may disconnect your Facebook Page or Instagram account at any time from the bot settings</li>
+              <li>คุณต้องเป็นแอดมินของเพจ Facebook หรือบัญชี Instagram ธุรกิจนั้น</li>
+              <li>คุณอนุญาตให้บริการเข้าถึงและจัดการข้อความแทนคุณ ทั้งใน Facebook Messenger และ Instagram Direct</li>
+              <li>คุณต้องปฏิบัติตามข้อกำหนดและนโยบายแพลตฟอร์มของ Meta</li>
+              <li>คุณรับผิดชอบเนื้อหาที่บอทของคุณส่งออกไปทั้งสองแพลตฟอร์ม</li>
+              <li>คุณยกเลิกการเชื่อมเพจ Facebook หรือบัญชี Instagram ได้ทุกเมื่อในหน้าตั้งค่าของบอท</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">5. Acceptable Use</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">5. การใช้งานที่ไม่อนุญาต</h2>
             <p className="text-gray-600 mb-4">
-              You agree NOT to use our Service to:
+              คุณตกลงว่าจะไม่ใช้บริการเพื่อ
             </p>
             <ul className="list-disc list-inside text-gray-600 space-y-2 ml-4">
-              <li>Send spam or unsolicited messages</li>
-              <li>Violate any laws or regulations</li>
-              <li>Infringe on intellectual property rights</li>
-              <li>Distribute malware or harmful content</li>
-              <li>Harass, abuse, or harm others</li>
-              <li>Collect personal data without consent</li>
-              <li>Impersonate others or provide false information</li>
+              <li>ส่งสแปมหรือข้อความที่ผู้รับไม่ได้ขอ</li>
+              <li>ทำผิดกฎหมายหรือข้อบังคับใด ๆ</li>
+              <li>ละเมิดทรัพย์สินทางปัญญาของผู้อื่น</li>
+              <li>เผยแพร่มัลแวร์หรือเนื้อหาที่เป็นอันตราย</li>
+              <li>คุกคาม ล่วงละเมิด หรือทำร้ายผู้อื่น</li>
+              <li>เก็บข้อมูลส่วนบุคคลโดยไม่ได้รับความยินยอม</li>
+              <li>แอบอ้างเป็นผู้อื่นหรือให้ข้อมูลเท็จ</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">6. Content Ownership</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">6. ความเป็นเจ้าของเนื้อหา</h2>
             <p className="text-gray-600 mb-4">
-              You retain ownership of the content you create using our Service. By using our
-              Service, you grant us a limited license to store, process, and display your
-              content as necessary to provide the Service.
+              เนื้อหาที่คุณสร้างในบริการยังเป็นของคุณ เมื่อใช้บริการ คุณอนุญาตให้บริการ
+              จัดเก็บ ประมวลผล และแสดงเนื้อหานั้นเท่าที่จำเป็นต่อการให้บริการ
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">7. Service Availability</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">7. ความพร้อมของบริการ</h2>
             <p className="text-gray-600 mb-4">
-              We strive to maintain high availability but do not guarantee uninterrupted service.
-              We may modify, suspend, or discontinue any part of the Service at any time.
+              เราพยายามให้บริการใช้งานได้ตลอดเวลา แต่ไม่รับประกันว่าจะไม่มีการหยุดชะงัก
+              และอาจปรับเปลี่ยน ระงับ หรือยุติบริการบางส่วนได้ทุกเมื่อ
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">8. Limitation of Liability</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">8. ข้อจำกัดความรับผิด</h2>
             <p className="text-gray-600 mb-4">
-              To the maximum extent permitted by law, KonKui shall not be liable for any
-              indirect, incidental, special, or consequential damages arising from your use
-              of the Service. Our total liability shall not exceed the amount paid by you
-              for the Service in the past 12 months.
+              เท่าที่กฎหมายอนุญาต ผู้ให้บริการตอบไวไม่ต้องรับผิดต่อความเสียหายทางอ้อม
+              ความเสียหายโดยบังเอิญ ความเสียหายพิเศษ หรือความเสียหายต่อเนื่องที่เกิดจากการใช้บริการ
+              และความรับผิดรวมทั้งหมดจะไม่เกินจำนวนเงินที่คุณจ่ายค่าบริการในช่วง 12 เดือนที่ผ่านมา
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">9. Indemnification</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">9. การชดใช้ค่าเสียหาย</h2>
             <p className="text-gray-600 mb-4">
-              You agree to indemnify and hold harmless KonKui and its affiliates from any
-              claims, damages, or expenses arising from your use of the Service or violation
-              of these Terms.
+              คุณตกลงชดใช้และปกป้องผู้ให้บริการตอบไวจากข้อเรียกร้อง ความเสียหาย
+              หรือค่าใช้จ่ายใด ๆ ที่เกิดจากการใช้บริการของคุณ หรือจากการละเมิดข้อตกลงนี้
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">10. Termination</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">10. การยกเลิกบัญชี</h2>
             <p className="text-gray-600 mb-4">
-              We may terminate or suspend your account at any time for violation of these Terms.
-              You may also terminate your account at any time by contacting us. Upon termination,
-              your right to use the Service will immediately cease.
+              เราอาจยกเลิกหรือระงับบัญชีของคุณได้ทุกเมื่อหากมีการละเมิดข้อตกลงนี้
+              คุณเองก็ขอยกเลิกบัญชีได้ทุกเมื่อ เมื่อบัญชีถูกยกเลิก สิทธิ์ใช้บริการจะสิ้นสุดทันที
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">11. Changes to Terms</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">11. การแก้ไขข้อตกลง</h2>
             <p className="text-gray-600 mb-4">
-              We reserve the right to modify these Terms at any time. We will notify users of
-              significant changes. Continued use of the Service after changes constitutes
-              acceptance of the new Terms.
+              เราอาจแก้ไขข้อตกลงนี้ได้ทุกเมื่อ และจะแจ้งให้ทราบเมื่อมีการเปลี่ยนแปลงสำคัญ
+              การใช้บริการต่อหลังการแก้ไขถือว่าคุณยอมรับข้อตกลงฉบับใหม่
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">12. Governing Law</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">12. กฎหมายที่ใช้บังคับ</h2>
             <p className="text-gray-600 mb-4">
-              These Terms shall be governed by and construed in accordance with the laws of
-              Thailand, without regard to its conflict of law provisions.
+              ข้อตกลงนี้อยู่ภายใต้และตีความตามกฎหมายของประเทศไทย
             </p>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">13. Contact Us</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">13. ติดต่อสอบถาม</h2>
             <p className="text-gray-600 mb-4">
-              If you have any questions about these Terms, please contact us at:
+              หากมีคำถามเกี่ยวกับข้อตกลงนี้ ติดต่อผู้ดูแลระบบของร้านที่คุณใช้งาน
             </p>
-            <ul className="list-none text-gray-600 space-y-1 ml-4">
-              <li>Email: support@konkui.com</li>
-              <li>Website: https://konkui.com</li>
-            </ul>
           </section>
         </div>
 
         <div className="mt-8 pt-6 border-t border-gray-200">
           <a href="/login" className="text-blue-600 hover:text-blue-800">
-            &larr; Back to Login
+            &larr; กลับไปหน้าเข้าสู่ระบบ
           </a>
         </div>
       </div>

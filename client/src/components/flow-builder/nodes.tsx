@@ -12,7 +12,7 @@ export const NODE_META: Record<NodeType, NodeMeta> = {
   choice: { label: 'ถามแบบมีปุ่ม', hint: 'ลูกค้ากดเลือก แต่ละปุ่มไปคนละทางได้', icon: ListChecks, color: '#6b5bc4', group: 'ถามลูกค้า' },
   input: { label: 'ถามให้พิมพ์ตอบ', hint: 'ชื่อ เบอร์โทร อีเมล ตัวเลข', icon: KeyRound, color: '#0e7490', group: 'ถามลูกค้า' },
   condition: { label: 'เงื่อนไข', hint: 'แยกทางตามคำตอบที่เก็บไว้', icon: GitBranch, color: '#8a5905', group: 'แยกทาง' },
-  handoff: { label: 'ส่งต่อให้คน', hint: 'เข้าคิว "รอคนตอบ" ในหน้าแชท', icon: Hand, color: '#d9920b', group: 'จบ' },
+  handoff: { label: 'ส่งต่อให้คน', hint: 'เข้าคิว “รอคนตอบ” ในหน้าแชท', icon: Hand, color: '#d9920b', group: 'จบ' },
   end: { label: 'จบการสนทนา', hint: 'บอทหยุด รอข้อความใหม่', icon: Flag, color: '#56605a', group: 'จบ' },
 };
 
@@ -24,7 +24,7 @@ export function defaultData(type: NodeType): NodeData {
     case 'choice': return { text: '', variable: '', items: [{ id: crypto.randomUUID().slice(0, 8), label: 'ตัวเลือก 1' }, { id: crypto.randomUUID().slice(0, 8), label: 'ตัวเลือก 2' }] };
     case 'input': return { text: '', variable: '', kind: 'text' };
     case 'condition': return { variable: '', operator: 'equals', value: '' };
-    case 'handoff': return { text: 'รอสักครู่นะคะ เจ้าหน้าที่จะมาตอบโดยเร็วที่สุด' };
+    case 'handoff': return { text: 'รอสักครู่นะคะ เจ้าหน้าที่จะรีบมาตอบค่ะ' };
     default: return {};
   }
 }

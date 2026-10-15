@@ -40,7 +40,7 @@ async function main() {
   const created = await botService.createBot(user.id, { name: 'ร้านดอกไม้ใบเตย', description: 'ร้านดอกไม้และช่อของขวัญ' });
   const bot = await prisma.bot.update({
     where: { id: created.id },
-    data: { isActive: true, fallbackText: 'ขอบคุณที่ทักมานะคะ เดี๋ยวแอดมินมาตอบเร็ว ๆ นี้ค่ะ', widgetGreeting: 'สวัสดีค่ะ ร้านดอกไม้ใบเตย สอบถามได้เลยนะคะ' },
+    data: { isActive: true, fallbackText: 'ขอบคุณที่ทักมานะคะ เดี๋ยวเจ้าหน้าที่จะรีบมาตอบนะคะ', widgetGreeting: 'สวัสดีค่ะ ร้านดอกไม้ใบเตย สอบถามได้เลยนะคะ' },
   });
 
   await prisma.autoReplyRule.createMany({ data: [
@@ -48,8 +48,8 @@ async function main() {
     { botId: bot.id, name: 'ที่อยู่ร้าน', keywords: JSON.stringify(['ร้านอยู่ไหน', 'ที่อยู่', 'แผนที่']), replyText: 'ร้านอยู่ซอยสุขุมวิท 55 (ทองหล่อ) ใกล้ BTS ทองหล่อค่ะ', priority: 5 },
   ] });
   await prisma.cannedResponse.createMany({ data: [
-    { botId: bot.id, shortcut: 'บัญชี', content: 'โอนได้ที่ กสิกรไทย 123-4-56789-0 ชื่อบัญชี ร้านดอกไม้ใบเตย แล้วส่งสลิปในแชทนี้ได้เลยค่ะ' },
-    { botId: bot.id, shortcut: 'ส่ง', content: 'ค่าส่งในกรุงเทพฯ 150 บาท ส่งภายในวันถ้าสั่งก่อน 14:00 น. ค่ะ' },
+    { botId: bot.id, shortcut: 'บัญชี', content: 'โอนได้ที่ธนาคารกสิกรไทย 123-4-56789-0 ชื่อบัญชี ร้านดอกไม้ใบเตย แล้วส่งสลิปในแชทนี้ได้เลยค่ะ' },
+    { botId: bot.id, shortcut: 'ส่ง', content: 'ค่าส่งในกรุงเทพฯ 150 บาท ส่งภายในวันเดียวกันถ้าสั่งก่อน 14:00 น. ค่ะ' },
     { botId: bot.id, shortcut: 'ขอบคุณ', content: 'ขอบคุณมากนะคะ ถ้ามีอะไรสอบถามเพิ่มทักมาได้ตลอดเลยค่ะ' },
   ] });
 

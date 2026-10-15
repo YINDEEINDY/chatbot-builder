@@ -44,7 +44,7 @@ export function FlowPreview({ botId, flowId, onClose }: { botId: string; flowId:
       if (fresh) { setLines([]); setSaved({}); }
       apply(r);
     } catch {
-      if (mine === seq.current) setError('ทดลองไม่สำเร็จ ตรวจว่ามีขั้นตอนต่อจาก “ลูกค้าเริ่มคุย” แล้ว');
+      if (mine === seq.current) setError('ทดลองไม่สำเร็จ ตรวจดูว่ามีขั้นตอนต่อจาก “ลูกค้าเริ่มคุย” แล้วหรือยัง');
     }
   };
 

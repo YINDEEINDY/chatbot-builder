@@ -13,7 +13,7 @@ export const env = {
   FACEBOOK_APP_SECRET: process.env.FACEBOOK_APP_SECRET || '',
   FACEBOOK_REDIRECT_URI: process.env.FACEBOOK_REDIRECT_URI || 'http://localhost:3001/api/auth/facebook/callback',
 
-  // Facebook OAuth - KonKui App (for page connection)
+  // Facebook OAuth - Pages app (for page connection)
   FACEBOOK_PAGES_APP_ID: process.env.FACEBOOK_PAGES_APP_ID || '',
   FACEBOOK_PAGES_APP_SECRET: process.env.FACEBOOK_PAGES_APP_SECRET || '',
   FACEBOOK_PAGES_REDIRECT_URI: process.env.FACEBOOK_PAGES_REDIRECT_URI || 'http://localhost:3001/api/auth/facebook/pages/callback',
@@ -35,3 +35,9 @@ export const env = {
   SMTP_PASS: process.env.SMTP_PASS || '',
   EMAIL_FROM: process.env.EMAIL_FROM || 'noreply@chatbot-builder.com',
 };
+
+// A guessable signing key would let anyone mint login tokens — refuse to run production without a real one.
+if (env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || env.JWT_SECRET === 'default-secret-change-me')) {
+  throw new Error('JWT_SECRET must be set in production');
+}
+if (env.JWT_SECRET.length < 32) console.warn('[env] JWT_SECRET is shorter than 32 characters — use a longer random string');

@@ -75,7 +75,7 @@ export function BroadcastListPage() {
   };
 
   const handleDelete = async (broadcastId: string) => {
-    if (!botId || !confirm('Delete this broadcast?')) return;
+    if (!botId || !confirm('ลบข้อความนี้ใช่ไหม')) return;
     try {
       await broadcastsApi.delete(botId, broadcastId);
       setBroadcasts(broadcasts.filter((b) => b.id !== broadcastId));
@@ -85,13 +85,13 @@ export function BroadcastListPage() {
   };
 
   const handleSend = async (broadcastId: string) => {
-    if (!botId || !confirm('Send this broadcast now?')) return;
+    if (!botId || !confirm('ส่งข้อความนี้ตอนนี้เลยใช่ไหม')) return;
     try {
       await broadcastsApi.send(botId, broadcastId);
       loadBroadcasts();
     } catch (error) {
       console.error('Failed to send broadcast:', error);
-      alert('Failed to send broadcast. Make sure you have contacts and the bot is connected.');
+      alert('ส่งข้อความไม่สำเร็จ ตรวจว่ามีรายชื่อลูกค้าแล้ว และเชื่อมเพจไว้แล้ว');
     }
   };
 
@@ -115,15 +115,15 @@ export function BroadcastListPage() {
   const getStatusText = (status: Broadcast['status']) => {
     switch (status) {
       case 'draft':
-        return 'Draft';
+        return 'ฉบับร่าง';
       case 'scheduled':
-        return 'Scheduled';
+        return 'ตั้งเวลาไว้';
       case 'sending':
-        return 'Sending...';
+        return 'กำลังส่ง';
       case 'sent':
-        return 'Sent';
+        return 'ส่งแล้ว';
       case 'failed':
-        return 'Failed';
+        return 'ส่งไม่สำเร็จ';
       default:
         return status;
     }
@@ -132,7 +132,7 @@ export function BroadcastListPage() {
   const getMessage = (broadcast: Broadcast): string => {
     try {
       const msg = JSON.parse(broadcast.message) as BroadcastMessage;
-      return msg.text || msg.title || '[Media]';
+      return msg.text || msg.title || '[รูปภาพหรือไฟล์]';
     } catch {
       return broadcast.message;
     }
@@ -150,12 +150,12 @@ export function BroadcastListPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">Broadcasts</h1>
-            <p className="text-gray-500">{currentBot?.name} - Send messages to your contacts</p>
+            <h1 className="text-2xl font-bold text-gray-900">ส่งข้อความหาหลายคน</h1>
+            <p className="text-gray-500">{currentBot?.name} · ส่งข้อความเดียวถึงลูกค้าหลายคนพร้อมกัน</p>
           </div>
           <Button onClick={() => setShowCreate(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            New Broadcast
+            สร้างข้อความ
           </Button>
         </div>
 
@@ -168,10 +168,10 @@ export function BroadcastListPage() {
           <Card>
             <CardContent className="text-center py-12">
               <Radio className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">No broadcasts yet</p>
+              <p className="text-gray-500 mb-4">ยังไม่มีข้อความที่สร้างไว้</p>
               <Button onClick={() => setShowCreate(true)}>
                 <Plus className="w-4 h-4 mr-2" />
-                Create Broadcast
+                สร้างข้อความ
               </Button>
             </CardContent>
           </Card>
@@ -190,23 +190,23 @@ export function BroadcastListPage() {
                     </div>
                     <p className="text-sm text-gray-500 truncate">{getMessage(broadcast)}</p>
                     <div className="flex items-center gap-4 mt-2 text-xs text-gray-400">
-                      <span>Targets: {broadcast.totalTargets}</span>
+                      <span>ผู้รับ {broadcast.totalTargets} คน</span>
                       {broadcast.status === 'sent' && (
                         <>
-                          <span>Sent: {broadcast.sentCount}</span>
+                          <span>ส่งถึง {broadcast.sentCount} คน</span>
                           {broadcast.failedCount > 0 && (
-                            <span className="text-red-500">Failed: {broadcast.failedCount}</span>
+                            <span className="text-red-500">ส่งไม่ถึง {broadcast.failedCount} คน</span>
                           )}
                         </>
                       )}
-                      <span>Created: {new Date(broadcast.createdAt).toLocaleDateString()}</span>
+                      <span>สร้างเมื่อ {new Date(broadcast.createdAt).toLocaleDateString('th-TH')}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {broadcast.status === 'draft' && (
                       <Button size="sm" onClick={() => handleSend(broadcast.id)}>
                         <Send className="w-4 h-4 mr-1" />
-                        Send
+                        ส่งเลย
                       </Button>
                     )}
                     {broadcast.status === 'draft' && (
@@ -231,30 +231,30 @@ export function BroadcastListPage() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <Card className="w-full max-w-md mx-4">
               <CardContent className="p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Create Broadcast</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4">สร้างข้อความ</h2>
                 <form onSubmit={handleCreate} className="space-y-4">
                   <Input
-                    label="Broadcast Name"
+                    label="ชื่อเรียกข้อความนี้"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
-                    placeholder="e.g., Weekly Update"
+                    placeholder="เช่น โปรสิ้นเดือน"
                     required
                   />
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Message
+                      ข้อความ
                     </label>
                     <textarea
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       rows={4}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter your broadcast message..."
+                      placeholder="พิมพ์ข้อความที่จะส่ง"
                       required
                     />
                   </div>
                   <p className="text-xs text-gray-500">
-                    This will send to all subscribed contacts for this bot.
+                    ข้อความจะถูกส่งถึงลูกค้าทุกคนที่เคยทักบอทนี้และยังรับข้อความอยู่
                   </p>
                   <div className="flex gap-3 pt-2">
                     <Button
@@ -263,10 +263,10 @@ export function BroadcastListPage() {
                       className="flex-1"
                       onClick={() => setShowCreate(false)}
                     >
-                      Cancel
+                      ยกเลิก
                     </Button>
                     <Button type="submit" className="flex-1" isLoading={isCreating}>
-                      Create
+                      สร้าง
                     </Button>
                   </div>
                 </form>

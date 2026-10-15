@@ -68,7 +68,7 @@ export function AnalyzePage() {
 
   const stats = [
     {
-      label: 'Total Messages',
+      label: 'ข้อความทั้งหมด',
       value: summary?.totalMessages?.toLocaleString() || '0',
       change: summary?.percentChange?.messages
         ? `${summary.percentChange.messages > 0 ? '+' : ''}${summary.percentChange.messages}%`
@@ -78,7 +78,7 @@ export function AnalyzePage() {
       color: 'blue',
     },
     {
-      label: 'Incoming',
+      label: 'ข้อความเข้า',
       value: summary?.incomingMessages?.toLocaleString() || '0',
       change: '',
       trend: 'neutral',
@@ -86,7 +86,7 @@ export function AnalyzePage() {
       color: 'green',
     },
     {
-      label: 'Outgoing',
+      label: 'ข้อความตอบ',
       value: summary?.outgoingMessages?.toLocaleString() || '0',
       change: '',
       trend: 'neutral',
@@ -94,7 +94,7 @@ export function AnalyzePage() {
       color: 'purple',
     },
     {
-      label: 'Total Users',
+      label: 'ลูกค้าทั้งหมด',
       value: contactStats?.totalContacts?.toLocaleString() || '0',
       change: summary?.percentChange?.users
         ? `${summary.percentChange.users > 0 ? '+' : ''}${summary.percentChange.users}%`
@@ -115,7 +115,7 @@ export function AnalyzePage() {
   // Format chart data
   const chartData = dailyData.map((d) => ({
     ...d,
-    date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+    date: new Date(d.date).toLocaleDateString('th-TH', { month: 'short', day: 'numeric' }),
   }));
 
   return (
@@ -124,9 +124,9 @@ export function AnalyzePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Analyze</h1>
+            <h1 className="text-2xl font-bold text-gray-900">สถิติ</h1>
             <p className="text-gray-500 mt-1">
-              Track your bot's performance and user engagement
+              ดูจำนวนข้อความและลูกค้าที่ทักเข้ามา
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -135,14 +135,15 @@ export function AnalyzePage() {
               onChange={(e) => setDays(Number(e.target.value))}
               className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
-              <option value={7}>Last 7 days</option>
-              <option value={14}>Last 14 days</option>
-              <option value={30}>Last 30 days</option>
+              <option value={7}>7 วันล่าสุด</option>
+              <option value={14}>14 วันล่าสุด</option>
+              <option value={30}>30 วันล่าสุด</option>
             </select>
             <button
               onClick={loadAnalytics}
               disabled={loading}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              aria-label="โหลดใหม่"
             >
               <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             </button>
@@ -174,7 +175,7 @@ export function AnalyzePage() {
                               : 'text-gray-500'
                           }`}
                         >
-                          {stat.change} vs previous period
+                          {stat.change} เทียบกับช่วงก่อนหน้า
                         </span>
                       </div>
                     )}
@@ -193,8 +194,8 @@ export function AnalyzePage() {
           {/* Messages Chart */}
           <Card>
             <CardHeader>
-              <h3 className="font-semibold text-gray-900">Messages Over Time</h3>
-              <p className="text-sm text-gray-500">Last {days} days</p>
+              <h3 className="font-semibold text-gray-900">ข้อความรายวัน</h3>
+              <p className="text-sm text-gray-500">{days} วันล่าสุด</p>
             </CardHeader>
             <CardContent>
               {chartData.length > 0 && chartData.some((d) => d.incoming > 0 || d.outgoing > 0) ? (
@@ -205,17 +206,17 @@ export function AnalyzePage() {
                     <YAxis fontSize={12} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="incoming" name="Incoming" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="outgoing" name="Outgoing" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="incoming" name="ข้อความเข้า" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="outgoing" name="ข้อความตอบ" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                   <div className="text-center">
                     <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500">No data yet</p>
+                    <p className="text-gray-500">ยังไม่มีข้อมูล</p>
                     <p className="text-sm text-gray-400">
-                      Charts will appear when you have message data
+                      กราฟจะขึ้นเมื่อมีข้อความเข้ามา
                     </p>
                   </div>
                 </div>
@@ -226,8 +227,8 @@ export function AnalyzePage() {
           {/* User Activity Chart */}
           <Card>
             <CardHeader>
-              <h3 className="font-semibold text-gray-900">User Activity</h3>
-              <p className="text-sm text-gray-500">Unique users per day</p>
+              <h3 className="font-semibold text-gray-900">ลูกค้าที่ทักเข้ามา</h3>
+              <p className="text-sm text-gray-500">จำนวนลูกค้าต่อวัน ไม่นับซ้ำ</p>
             </CardHeader>
             <CardContent>
               {chartData.length > 0 && chartData.some((d) => d.users > 0) ? (
@@ -237,16 +238,16 @@ export function AnalyzePage() {
                     <XAxis dataKey="date" fontSize={12} />
                     <YAxis fontSize={12} />
                     <Tooltip />
-                    <Bar dataKey="users" name="Users" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="users" name="ลูกค้า" fill="#10b981" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                   <div className="text-center">
                     <TrendingUp className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500">No data yet</p>
+                    <p className="text-gray-500">ยังไม่มีข้อมูล</p>
                     <p className="text-sm text-gray-400">
-                      User activity will appear when users start chatting
+                      ข้อมูลจะขึ้นเมื่อลูกค้าเริ่มทักเข้ามา
                     </p>
                   </div>
                 </div>
@@ -259,15 +260,15 @@ export function AnalyzePage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card>
             <CardHeader>
-              <h3 className="font-semibold text-gray-900">User Activity Summary</h3>
-              <p className="text-sm text-gray-500">Recent user engagement</p>
+              <h3 className="font-semibold text-gray-900">สรุปลูกค้า</h3>
+              <p className="text-sm text-gray-500">ลูกค้าที่ทักเข้ามาช่วงนี้</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <Users className="w-5 h-5 text-blue-500" />
-                    <span className="text-gray-700">Total Contacts</span>
+                    <span className="text-gray-700">รายชื่อลูกค้าทั้งหมด</span>
                   </div>
                   <span className="font-semibold text-gray-900">
                     {contactStats?.totalContacts || 0}
@@ -276,7 +277,7 @@ export function AnalyzePage() {
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <Zap className="w-5 h-5 text-green-500" />
-                    <span className="text-gray-700">Active Today</span>
+                    <span className="text-gray-700">ทักวันนี้</span>
                   </div>
                   <span className="font-semibold text-gray-900">
                     {contactStats?.activeToday || 0}
@@ -285,7 +286,7 @@ export function AnalyzePage() {
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5 text-purple-500" />
-                    <span className="text-gray-700">Active Last 7 Days</span>
+                    <span className="text-gray-700">ทักใน 7 วันล่าสุด</span>
                   </div>
                   <span className="font-semibold text-gray-900">
                     {contactStats?.activeLast7Days || 0}
@@ -297,25 +298,25 @@ export function AnalyzePage() {
 
           <Card>
             <CardHeader>
-              <h3 className="font-semibold text-gray-900">Message Breakdown</h3>
-              <p className="text-sm text-gray-500">In the selected period</p>
+              <h3 className="font-semibold text-gray-900">แยกตามประเภทข้อความ</h3>
+              <p className="text-sm text-gray-500">ในช่วงเวลาที่เลือก</p>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <span className="text-blue-700">Total Messages</span>
+                  <span className="text-blue-700">ข้อความทั้งหมด</span>
                   <span className="font-semibold text-blue-900">
                     {summary?.totalMessages || 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <span className="text-green-700">Incoming (from users)</span>
+                  <span className="text-green-700">ข้อความเข้า (จากลูกค้า)</span>
                   <span className="font-semibold text-green-900">
                     {summary?.incomingMessages || 0}
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                  <span className="text-purple-700">Outgoing (bot replies)</span>
+                  <span className="text-purple-700">ข้อความตอบ (จากบอท)</span>
                   <span className="font-semibold text-purple-900">
                     {summary?.outgoingMessages || 0}
                   </span>
@@ -326,16 +327,16 @@ export function AnalyzePage() {
 
           <Card>
             <CardHeader>
-              <h3 className="font-semibold text-gray-900">Conversion Goals</h3>
-              <p className="text-sm text-gray-500">Track important user actions</p>
+              <h3 className="font-semibold text-gray-900">เป้าหมายการขาย</h3>
+              <p className="text-sm text-gray-500">ติดตามสิ่งที่อยากให้ลูกค้าทำ</p>
             </CardHeader>
             <CardContent>
               <div className="h-48 flex items-center justify-center bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
                 <div className="text-center">
                   <Target className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                  <p className="text-gray-500">Coming soon</p>
+                  <p className="text-gray-500">เร็ว ๆ นี้</p>
                   <p className="text-sm text-gray-400">
-                    Goal tracking will be available soon
+                    กำลังพัฒนา จะเปิดให้ใช้เร็ว ๆ นี้
                   </p>
                 </div>
               </div>
