@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Bot, Copy, Check, Pencil, Plus, Trash2, X } from 'lucide-react';
 import type { Conversation } from '../../types';
 import { Avatar } from './Avatar';
-import { PLATFORM, STATUS, parseAttrs, statusOf, waited } from './format';
+import { PLATFORM, STATUS, parseAttrs, statusOf, waitFor } from './format';
 import { cn } from '../../utils/cn';
 
 interface Props {
@@ -79,7 +79,7 @@ export function Ticket({ conversation: c, onSave, onSaveProfile, onClose }: Prop
         </svg>
         <div className="rounded-b-md border border-t-0 border-[#e3e0d4] bg-[#fffdf6] px-4 pb-3 pt-3.5 shadow-[0_6px_14px_-10px_rgba(40,50,40,.35)]">
           <span className={cn('stamp absolute right-3 top-2 bg-[#fffdf6] text-center leading-tight', st.tone)}>
-            {st.label}{st === STATUS.pending && <small className="block text-[10px] font-semibold tabular-nums">{waited(c.waitingSince)?.replace('รอมา ', '')}</small>}
+            {st.label}{st === STATUS.pending && <small className="block text-[10px] font-semibold tabular-nums">{waitFor(c.waitingSince)}</small>}
           </span>
           <h2 className="text-[15px] font-semibold">ใบรับเรื่อง</h2>
           <p className="text-xs text-ink-soft">สิ่งที่ลูกค้าตอบบอท แก้ได้ถ้าข้อมูลไม่ตรง</p>

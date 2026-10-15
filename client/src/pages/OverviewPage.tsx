@@ -8,19 +8,19 @@ import { useBotStore } from '../stores/bot.store';
 import { conversationsApi } from '../api/conversations';
 import { Avatar } from '../components/inbox/Avatar';
 import { ChannelMark } from '../components/inbox/ChannelMark';
-import { PLATFORM, parseAttrs, waited } from '../components/inbox/format';
+import { PLATFORM, parseAttrs, waited, waitFor } from '../components/inbox/format';
 import type { Conversation } from '../types';
 import { cn } from '../utils/cn';
 
 const greeting = () => {
   const h = new Date().getHours();
-  return h < 11 ? 'สวัสดีตอนเช้า' : h < 13 ? 'สวัสดีตอนสาย' : h < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
+  return h < 12 ? 'สวัสดีตอนเช้า' : h < 13 ? 'สวัสดีตอนเที่ยง' : h < 17 ? 'สวัสดีตอนบ่าย' : 'สวัสดีตอนเย็น';
 };
 const thaiDate = () => new Date().toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 const agoText = (t: number | null) => {
   if (!t) return 'กำลังโหลด';
   const s = Math.round((Date.now() - t) / 1000);
-  return s < 5 ? 'อัปเดตเมื่อสักครู่' : `อัปเดตเมื่อ ${s} วินาทีที่แล้ว`;
+  return s < 5 ? 'อัปเดตเมื่อสักครู่' : `อัปเดตเมื่อ ${s} วินาทีที่ผ่านมา`;
 };
 
 function Kpi({ label, value, unit, foot, children }: { label: string; value: string | number; unit?: string; foot: React.ReactNode; children?: React.ReactNode }) {
@@ -76,7 +76,7 @@ function Overview() {
     <>
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold leading-snug">{greeting()} {user?.name?.split(' ')[0] ? `คุณ${user.name.split(' ')[0]}` : ''}</h1>
+          <h1 className="text-2xl font-semibold leading-snug">{greeting()} {user?.name?.split(' ')[0] ? `คุณ${/^[A-Za-z]/.test(user.name) ? ' ' : ''}${user.name.split(' ')[0]}` : ''}</h1>
           <p className="text-sm text-ink-soft">{thaiDate()}</p>
         </div>
         <button onClick={refresh} className="flex items-center gap-2 rounded-lg px-2 py-1 text-xs text-ink-soft hover:bg-gray-100">
@@ -144,7 +144,7 @@ function Overview() {
                       <div className="hidden min-w-0 items-center gap-2 text-[13px] text-ink-soft sm:flex">
                         {answers.length ? answers.map((a, j) => <span key={j} className={cn('truncate', j === 0 && 'rounded-md border border-line bg-paper px-2 py-0.5 text-xs')}>{a}</span>) : <span className="truncate">{c.lastMessage?.content}</span>}
                       </div>
-                      <span className="hidden items-center gap-1.5 text-[13px] font-semibold text-marigold-700 tabular-nums sm:flex"><Clock className="h-4 w-4 text-marigold-500" />{waited(c.waitingSince)?.replace('รอมา ', '')}</span>
+                      <span className="hidden items-center gap-1.5 text-[13px] font-semibold text-marigold-700 tabular-nums sm:flex"><Clock className="h-4 w-4 text-marigold-500" />{waitFor(c.waitingSince)}</span>
                       <button onClick={() => take(c)} className={cn('h-8 rounded-lg px-3 text-[13px] font-medium', i === 0 ? 'bg-jade-600 text-white hover:bg-jade-700' : 'border border-gray-300 bg-surface hover:bg-gray-50')}>รับแชท</button>
                     </li>
                   );
@@ -161,7 +161,7 @@ function Overview() {
               {hours.map((h) => {
                 const n = today?.hourly[h] ?? 0;
                 const future = h > hourNow;
-                return <span key={h} title={`${h}:00 · ${n} ข้อความ`} className={cn('block rounded-t', future ? 'h-full border border-b-0 border-dashed border-gray-300 opacity-60' : h === hourNow ? 'bg-jade-600' : 'bg-jade-100')} style={future ? { height: '30%' } : { height: `${Math.max(4, (n / peak) * 100)}%` }} />;
+                return <span key={h} title={`${String(h).padStart(2, '0')}:00 มี ${n} ข้อความ`} className={cn('block rounded-t', future ? 'h-full border border-b-0 border-dashed border-gray-300 opacity-60' : h === hourNow ? 'bg-jade-600' : 'bg-jade-100')} style={future ? { height: '30%' } : { height: `${Math.max(4, (n / peak) * 100)}%` }} />;
               })}
             </div>
             <div className="mt-1.5 grid grid-cols-[repeat(14,minmax(0,1fr))] gap-1.5 text-center text-[11px] text-ink-soft tabular-nums sm:gap-2">

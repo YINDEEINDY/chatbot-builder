@@ -75,7 +75,7 @@ export function MainLayout({ children, fullBleed }: { children: React.ReactNode;
     { to: b('people'), label: 'ลูกค้า', icon: Users },
   ] : [{ to: '/bots', label: 'ร้านของฉัน', icon: Store, end: true }];
   const build: NavItem[] = botId ? [
-    { to: b('flows'), label: 'บอทและแบบสอบถาม', icon: Bot },
+    { to: b('flows'), label: 'บอทถามตอบ', icon: Bot },
     { to: b('auto-reply'), label: 'ตอบอัตโนมัติ', icon: Zap },
     { to: b('analyze'), label: 'รายงาน', icon: BarChart3 },
     { to: b('channels'), label: 'ตั้งค่าและช่องทาง', icon: Settings },
@@ -227,7 +227,7 @@ export function MainLayout({ children, fullBleed }: { children: React.ReactNode;
           {tabs.map((n) => (
             <NavLink key={n.to} to={n.to} className={({ isActive }) => cn('relative flex flex-1 flex-col items-center gap-0.5 rounded-xl py-1.5 text-[11px]', isActive ? 'bg-jade-50 font-semibold text-jade-800' : 'text-ink-soft')}>
               <n.icon className="h-5 w-5" strokeWidth={1.8} />
-              <span className="max-w-full truncate px-1">{n.label === 'บอทและแบบสอบถาม' ? 'บอท' : n.label === 'ตั้งค่าและช่องทาง' ? 'ตั้งค่า' : n.label}</span>
+              <span className="max-w-full truncate px-1">{n.label === 'บอทถามตอบ' ? 'บอท' : n.label === 'ตั้งค่าและช่องทาง' ? 'ตั้งค่า' : n.label}</span>
               {!!n.badge && <span className="absolute right-3 top-0.5 min-w-[18px] rounded-full bg-marigold-500 px-1 text-center text-[10px] font-semibold leading-[18px] text-white">{n.badge}</span>}
             </NavLink>
           ))}

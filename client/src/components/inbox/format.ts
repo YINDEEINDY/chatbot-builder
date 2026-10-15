@@ -4,7 +4,7 @@ export const STATUS: Record<ConversationStatus, { label: string; tone: string; d
   pending: { label: 'รอคนตอบ', tone: 'text-marigold-600', dot: 'bg-marigold-500' },
   open: { label: 'กำลังคุย', tone: 'text-jade-700', dot: 'bg-jade-500' },
   bot: { label: 'บอทดูแล', tone: 'text-lilac-600', dot: 'bg-lilac-600' },
-  resolved: { label: 'ปิดแล้ว', tone: 'text-gray-500', dot: 'bg-gray-400' },
+  resolved: { label: 'ปิดเรื่องแล้ว', tone: 'text-gray-500', dot: 'bg-gray-400' },
 };
 
 /** Status display, tolerant of pre-revamp values ('human' → open, 'closed' → resolved). */
@@ -30,14 +30,16 @@ export function shortTime(iso: string) {
   return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
 }
 
-export function waited(iso?: string | null) {
+/** How long someone has been waiting, as a duration only: "ไม่ถึงนาที" · "5 นาที" · "2 ชม." · "1 วัน". */
+export function waitFor(iso?: string | null) {
   if (!iso) return null;
   const min = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (min < 1) return 'เพิ่งเข้าคิว';
-  if (min < 60) return `รอมา ${min} นาที`;
+  if (min < 1) return 'ไม่ถึงนาที';
+  if (min < 60) return `${min} นาที`;
   const h = Math.floor(min / 60);
-  return h < 24 ? `รอมา ${h} ชม.` : `รอมา ${Math.floor(h / 24)} วัน`;
+  return h < 24 ? `${h} ชม.` : `${Math.floor(h / 24)} วัน`;
 }
+export const waited = (iso?: string | null) => (iso ? `รอมา ${waitFor(iso)}` : null);
 
 export const clock = (iso: string) => new Date(iso).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
 export const dayLabel = (iso: string) => {

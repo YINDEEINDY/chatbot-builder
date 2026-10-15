@@ -36,8 +36,8 @@ export const useShopPulse = () => useContext(ShopPulseContext);
 
 export const SETUP_STEPS = [
   { key: 'channel', label: 'เชื่อมช่องทาง', path: 'channels', hint: 'ต่อ LINE OA หรือเพจ Facebook' },
-  { key: 'bot', label: 'แก้บอททักทาย', path: 'flows', hint: 'ใส่คำถามที่ร้านต้องถามทุกครั้ง' },
-  { key: 'rules', label: 'ตั้งคำตอบตามคำ', path: 'auto-reply', hint: 'เช่น ราคา เวลาเปิด ที่อยู่' },
-  { key: 'canned', label: 'เก็บคำตอบสำเร็จรูป', path: 'auto-reply', hint: 'ประโยคที่ตอบซ้ำทุกวัน' },
+  { key: 'bot', label: 'ตั้งบอทถามตอบ', path: 'flows', hint: 'ใส่คำถามที่ร้านต้องถามทุกครั้ง' },
+  { key: 'rules', label: 'ตั้งตอบอัตโนมัติตามคำ', path: 'auto-reply', hint: 'เช่น ราคา เวลาเปิด ที่อยู่' },
+  { key: 'canned', label: 'เพิ่มคำตอบสำเร็จรูป', path: 'auto-reply', hint: 'ประโยคที่ตอบซ้ำทุกวัน' },
   { key: 'tested', label: 'ลองทักจากมือถือ', path: 'channels', hint: 'สแกน QR แล้วทักร้านตัวเอง' },
 ] as const;

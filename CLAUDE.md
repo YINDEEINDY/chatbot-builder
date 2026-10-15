@@ -55,7 +55,7 @@ realtime.ts          Socket.IO: namespace หลัก = แอดมิน (JWT
 - **เชื่อมช่องทาง**: LINE ตั้งและทดสอบ webhook ผ่าน API ให้เอง (`server/src/channels/setup.ts`) แต่ "Use webhook" กับปิดข้อความตอบกลับอัตโนมัติใน OA Manager ต้องกดเอง · Facebook ใช้ Callback URL เดียว `/api/webhooks/facebook` + `FACEBOOK_VERIFY_TOKEN` แยกร้านจาก page id (`/facebook/:botId` เดิมยังใช้ได้)
 - Production ต้องมี `FACEBOOK_PAGES_APP_SECRET` (webhook ไม่ยอมรับของที่ไม่มีลายเซ็น) และ `JWT_SECRET` จริง
 - `JWT_SECRET` ใช้สร้างกุญแจเข้ารหัส token ของเพจ/LINE ด้วย — เปลี่ยนแล้วต้องเชื่อมช่องทางใหม่
-- หน้าตา: token สีอยู่ใน `client/src/index.css` (`@theme`) · ส้มดาวเรือง (marigold) = "รอคนตอบ" ใช้ที่อื่นไม่ได้
+- หน้าตา: ทิศทาง A "เคาน์เตอร์สงบ" (docs/UX-AUDIT.md) · token สีอยู่ใน `client/src/index.css` (`@theme`) · ส้มดาวเรือง (marigold) = "รอคนตอบ" ใช้ที่อื่นไม่ได้ · หน้าที่อยู่ใน MainLayout ต้อง render เนื้อหาเป็น component ลูกถ้าจะอ่าน `useShopPulse()` (provider อยู่ใน layout)
 - import ฝั่ง server ใช้นามสกุล `.js` · log ด้วย winston (`utils/logger`)
 
 ## โครงไฟล์ที่ต้องรู้
@@ -66,6 +66,9 @@ realtime.ts          Socket.IO: namespace หลัก = แอดมิน (JWT
 | `server/src/channels/` | ส่งข้อความออกแต่ละแพลตฟอร์ม |
 | `server/src/routes/replies.routes.ts` | คำตอบสำเร็จรูป + กฎตอบตามคำ + แก้คำตอบของลูกค้า |
 | `server/public/widget.js` | ปุ่มแชทฝังเว็บ (JS ล้วน shadow DOM ไม่ต้อง build) |
-| `client/src/pages/InboxPage.tsx` + `components/inbox/` | กล่องแชท 3 ช่อง |
+| `client/src/components/layout/MainLayout.tsx` | เมนูซ้าย (สลับร้าน · ค้นหา Ctrl K · เช็กลิสต์ · สถานะ) + ShopPulse context ที่หน้าอื่นอ่าน |
+| `client/src/pages/OverviewPage.tsx` + `server/src/services/overview.service.ts` | หน้าภาพรวม (คิวรอ · ตัวเลขวันนี้ · เช็กลิสต์) |
+| `client/src/pages/InboxPage.tsx` + `components/inbox/` | กล่องแชท 3 ช่อง (คีย์ลัด J/K/A/E) · `Ticket.tsx` = ใบรับเรื่อง |
+| `server/src/services/flow-templates.ts` | เทมเพลตบอท 6 ประเภทธุรกิจ |
 | `client/src/components/flow-builder/` | ตัวสร้างบอท (xyflow) + ทดลองคุย |
 | `client/src/components/ui/kit.tsx` | คลาส/คอมโพเนนต์พื้นฐานของหน้าใหม่ |

@@ -52,7 +52,7 @@ export function useWaitingAlerts(botId: string | null, pending: number, onOpen: 
       if (c.status !== 'pending' || before === 'pending' || !enabled) return;
       chime();
       if (permission === 'granted' && document.visibilityState !== 'visible') {
-        const n = new Notification(`${c.contact?.name || 'ลูกค้า'} รอคนตอบ`, { body: 'บอทส่งต่อแชทนี้ให้เจ้าหน้าที่', tag: c.id, icon: '/favicon.svg' });
+        const n = new Notification(`${c.contact?.name || 'ลูกค้าไม่ระบุชื่อ'} รอคนตอบ`, { body: 'บอทส่งต่อแชทนี้ให้เจ้าหน้าที่', tag: c.id, icon: '/favicon.svg' });
         n.onclick = () => { window.focus(); openRef.current(c.id); n.close(); };
       }
     });

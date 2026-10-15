@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Bot, Check, CheckCircle2, Clock, Hand, PanelRight, RotateCcw, SendHorizontal, Slash, CornerDownRight } from 'lucide-react';
 import type { CannedResponse, Conversation, Message } from '../../types';
 import { Avatar } from './Avatar';
-import { PLATFORM, STATUS, statusOf, clock, dayLabel, meta, waited } from './format';
+import { PLATFORM, STATUS, statusOf, clock, dayLabel, meta, waitFor } from './format';
 import { cn } from '../../utils/cn';
 
 interface Props {
@@ -117,7 +117,7 @@ export function ChatPane(p: Props) {
             <span className="hidden sm:inline">ทักผ่าน {PLATFORM[c.contact.platform]?.label}</span>
             <span className="hidden text-gray-300 sm:inline">|</span>
             {waiting
-              ? <span className="flex items-center gap-1 font-semibold text-marigold-700"><Clock className="h-3 w-3" />รอคนตอบ {waited(c.waitingSince)?.replace('รอมา ', '')}</span>
+              ? <span className="flex items-center gap-1 font-semibold text-marigold-700"><Clock className="h-3 w-3" />รอคนตอบ {waitFor(c.waitingSince)}</span>
               : <span className={cn('flex items-center gap-1', st.tone)}><span className={cn('h-1.5 w-1.5 rounded-full', st.dot)} />{st.label}</span>}
           </div>
         </div>

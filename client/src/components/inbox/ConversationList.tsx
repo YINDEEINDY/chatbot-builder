@@ -2,7 +2,7 @@ import { Bot, CheckCircle2, Clock, Search, UserRound } from 'lucide-react';
 import type { Conversation, ConversationStatus } from '../../types';
 import type { Assignee } from '../../api/conversations';
 import { Avatar } from './Avatar';
-import { STATUS, parseAttrs, preview, shortTime, statusOf, waited } from './format';
+import { STATUS, parseAttrs, preview, shortTime, statusOf, waitFor } from './format';
 import { cn } from '../../utils/cn';
 
 export type StatusFilter = ConversationStatus | 'all';
@@ -33,13 +33,13 @@ function StateLine({ c, meId }: { c: Conversation; meId?: string }) {
   if (st === STATUS.pending) {
     return (
       <span className="flex min-w-0 items-center gap-2 text-xs">
-        <span className="flex shrink-0 items-center gap-1 rounded-[5px] bg-marigold-100 px-1.5 font-semibold leading-5 text-marigold-700"><Clock className="h-3 w-3" />{waited(c.waitingSince)?.replace('รอมา ', 'รอ ')}</span>
+        <span className="flex shrink-0 items-center gap-1 rounded-[5px] bg-marigold-100 px-1.5 font-semibold leading-5 text-marigold-700"><Clock className="h-3 w-3" />{`รอ ${waitFor(c.waitingSince)}`}</span>
         {first && <span className="truncate text-ink-soft">{first}</span>}
       </span>
     );
   }
   if (st === STATUS.open) return <span className="flex items-center gap-1.5 text-xs text-ink-soft"><UserRound className="h-3 w-3 text-jade-600" />{c.assignedTo === meId ? 'คุณกำลังคุย' : 'มีคนกำลังคุย'}</span>;
-  if (st === STATUS.bot) return <span className="flex items-center gap-1.5 text-xs text-ink-soft"><Bot className="h-3 w-3" />บอทกำลังดูแล</span>;
+  if (st === STATUS.bot) return <span className="flex items-center gap-1.5 text-xs text-ink-soft"><Bot className="h-3 w-3" />บอทดูแล</span>;
   return <span className="flex items-center gap-1.5 text-xs text-ink-soft"><CheckCircle2 className="h-3 w-3" />ปิดเรื่องแล้ว</span>;
 }
 

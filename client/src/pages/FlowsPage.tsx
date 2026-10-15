@@ -108,7 +108,7 @@ export function FlowsPage() {
             <div className="flex items-start gap-3">
               <div className="flex-1">
                 <h2 id="gallery-title" className="text-lg font-semibold">เริ่มจากเทมเพลต</h2>
-                <p className="text-sm text-ink-soft">เลือกแบบที่ใกล้ร้านคุณที่สุด แล้วแก้คำถามต่อได้ทุกข้อ ทุกแบบจบด้วยการส่งต่อให้คนพร้อมข้อมูลที่เก็บได้</p>
+                <p className="text-sm text-ink-soft">เลือกแบบที่ใกล้ร้านคุณที่สุด แล้วแก้คำถามต่อได้ทุกข้อ ทุกแบบจบด้วยการส่งต่อให้คนพร้อมข้อมูลที่เก็บได้ ข้อความลงท้ายด้วย “ค่ะ” เปลี่ยนเป็น “ครับ” ได้ในแต่ละขั้น</p>
               </div>
               <button onClick={() => setGallery(false)} className="rounded-lg p-1.5 text-ink-soft hover:bg-gray-100" aria-label="ปิด"><X className="h-5 w-5" /></button>
             </div>
