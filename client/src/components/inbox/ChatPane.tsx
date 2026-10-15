@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Bot, CheckCheck, Hand, PanelRight, RotateCcw, SendHorizontal, Slash } from 'lucide-react';
 import type { CannedResponse, Conversation, Message } from '../../types';
 import { Avatar } from './Avatar';
-import { PLATFORM, STATUS, clock, dayLabel, meta } from './format';
+import { PLATFORM, statusOf, clock, dayLabel, meta } from './format';
 import { cn } from '../../utils/cn';
 
 interface Props {
@@ -20,7 +20,9 @@ interface Props {
   onResolve: () => void;
 }
 
-function Bubble({ m }: { m: Message }) {
+function Bubble({ m: raw }: { m: Message }) {
+  // pre-revamp rows: outgoing messages were stored with the default sender 'contact'
+  const m = raw.direction === 'outgoing' && raw.sender === 'contact' ? { ...raw, sender: 'bot' as const } : raw;
   if (m.sender === 'system') {
     return (
       <div className="my-3 flex justify-center">
@@ -58,7 +60,7 @@ function Bubble({ m }: { m: Message }) {
 
 export function ChatPane(p: Props) {
   const c = p.conversation;
-  const st = STATUS[c.status];
+  const st = statusOf(c.status);
   const [text, setText] = useState('');
   const [pick, setPick] = useState(0);
   const endRef = useRef<HTMLDivElement>(null);

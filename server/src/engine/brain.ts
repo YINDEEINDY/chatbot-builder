@@ -24,7 +24,9 @@ export interface Inbound {
   replyToken?: string;   // LINE
 }
 
-const HUMAN = new Set(['pending', 'open']);
+// 'human' / 'closed' are the pre-revamp names still present in existing databases.
+const HUMAN = new Set(['pending', 'open', 'human']);
+const DONE = new Set(['resolved', 'closed']);
 const parse = <T>(s: string | null | undefined, fallback: T): T => {
   try { return s ? JSON.parse(s) : fallback; } catch { return fallback; }
 };
@@ -46,10 +48,10 @@ export async function handleInbound(bot: Bot, msg: Inbound): Promise<void> {
   });
 
   let conversation = await prisma.conversation.findUnique({ where: { contactId: contact.id } });
-  const isNew = !conversation || conversation.status === 'resolved';
+  const isNew = !conversation || DONE.has(conversation.status);
   if (!conversation) {
     conversation = await prisma.conversation.create({ data: { botId: bot.id, contactId: contact.id, status: 'bot' } });
-  } else if (conversation.status === 'resolved') {
+  } else if (DONE.has(conversation.status)) {
     conversation = await prisma.conversation.update({
       where: { id: conversation.id },
       data: { status: 'bot', assignedTo: null, waitingSince: null, humanTakeoverAt: null },

@@ -137,3 +137,18 @@ test('LINE message limits: ≤13 quick replies, labels clipped to 20 chars', () 
   assert.equal(msg.quickReply.items.length, 13);
   assert.ok(msg.quickReply.items.every((i) => [...i.action.label].length <= 20));
 });
+
+test('pre-revamp rows: status "human" keeps the bot silent, "closed" restarts with the bot', async () => {
+  const id = `web_legacy_${crypto.randomUUID()}`;
+  await handleInbound(bot, { platform: 'web', senderId: id, text: 'สวัสดี' });
+  const contact = await prisma.contact.findUniqueOrThrow({ where: { botId_senderId: { botId: bot.id, senderId: id } } });
+  await prisma.conversation.update({ where: { contactId: contact.id }, data: { status: 'human' } });
+  const before = sent.length;
+  await handleInbound(bot, { platform: 'web', senderId: id, text: 'ยังอยู่ไหม' });
+  assert.equal(sent.length, before, 'legacy human takeover is respected');
+  await prisma.conversation.update({ where: { contactId: contact.id }, data: { status: 'closed' } });
+  await handleInbound(bot, { platform: 'web', senderId: id, text: 'กลับมาแล้ว' });
+  assert.equal((await prisma.conversation.findUniqueOrThrow({ where: { contactId: contact.id } })).status, 'bot');
+  const list = await conversationService.listConversations(bot.id, userId, { status: 'open' });
+  assert.ok(Object.values(list.counts).every((n) => typeof n === 'number'));
+});

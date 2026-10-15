@@ -7,6 +7,10 @@ export const STATUS: Record<ConversationStatus, { label: string; tone: string; d
   resolved: { label: 'ปิดแล้ว', tone: 'text-gray-500', dot: 'bg-gray-400' },
 };
 
+/** Status display, tolerant of pre-revamp values ('human' → open, 'closed' → resolved). */
+export const statusOf = (s: string) =>
+  STATUS[(s === 'human' ? 'open' : s === 'closed' ? 'resolved' : s) as ConversationStatus] ?? STATUS.bot;
+
 export const PLATFORM: Record<Platform, { label: string; color: string }> = {
   line: { label: 'LINE', color: '#06C755' },
   facebook: { label: 'Messenger', color: '#0866FF' },

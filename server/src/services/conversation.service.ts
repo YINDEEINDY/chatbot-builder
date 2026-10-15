@@ -4,6 +4,8 @@ import { deliver } from '../channels/index.js';
 import { clearSession, saveMessage, touch } from '../engine/brain.js';
 
 export type Assignee = 'mine' | 'unassigned' | 'all';
+// Pre-revamp status names that may still be stored.
+const LEGACY: Record<string, string[]> = { open: ['human'], resolved: ['closed'] };
 
 async function ownBot(botId: string, userId: string) {
   const bot = await prisma.bot.findFirst({ where: { id: botId, userId } });
@@ -24,7 +26,7 @@ class ConversationService {
     const conversations = await prisma.conversation.findMany({
       where: {
         botId,
-        ...(opts.status && opts.status !== 'all' && { status: opts.status }),
+        ...(opts.status && opts.status !== 'all' && { status: { in: [opts.status, ...(LEGACY[opts.status] ?? [])] } }),
         ...(opts.assignee === 'mine' && { assignedTo: userId }),
         ...(opts.assignee === 'unassigned' && { assignedTo: null }),
         ...(opts.search && { contact: { OR: [{ name: { contains: opts.search, mode: 'insensitive' as const } }, { senderId: { contains: opts.search } }] } }),
@@ -45,7 +47,11 @@ class ConversationService {
     const counts = await prisma.conversation.groupBy({ by: ['status'], where: { botId }, _count: true });
     return {
       conversations: conversations.map((c) => ({ ...c, lastMessage: bySender.get(c.contact.senderId) ?? null })),
-      counts: Object.fromEntries(counts.map((c) => [c.status, c._count])),
+      counts: counts.reduce<Record<string, number>>((acc, c) => {
+        const key = c.status === 'human' ? 'open' : c.status === 'closed' ? 'resolved' : c.status;
+        acc[key] = (acc[key] ?? 0) + c._count;
+        return acc;
+      }, {}),
     };
   }
 
@@ -87,7 +93,7 @@ class ConversationService {
     const { bot, conversation } = await ownConversation(conversationId, botId, userId);
     const text = content.trim();
     if (!text) throw new AppError('Message is empty', 400);
-    if (conversation.status !== 'open') await this.takeoverConversation(conversationId, botId, userId);
+    if (conversation.status !== 'open' && conversation.status !== 'human') await this.takeoverConversation(conversationId, botId, userId);
     const message = await saveMessage(botId, conversation.contact, { content: text, direction: 'outgoing', sender: 'agent', agentId: userId });
     try {
       await deliver(bot, conversation.contact, [{ text }], { fromAgent: true });

@@ -5,7 +5,7 @@ import { MainLayout } from '../components/layout/MainLayout';
 import { PageHeader, btnGhost } from '../components/ui/kit';
 import { contactsApi } from '../api/contacts';
 import { Avatar } from '../components/inbox/Avatar';
-import { PLATFORM, STATUS, parseAttrs, shortTime } from '../components/inbox/format';
+import { PLATFORM, statusOf, parseAttrs, shortTime } from '../components/inbox/format';
 import type { Contact, ConversationStatus } from '../types';
 
 type Row = Contact & { conversation?: { id: string; status: ConversationStatus } | null };
@@ -83,7 +83,7 @@ export function PeoplePage() {
           <tbody className="divide-y divide-line">
             {rows.map((c) => {
               const a = parseAttrs(c.attributes);
-              const st = c.conversation ? STATUS[c.conversation.status] : null;
+              const st = c.conversation ? statusOf(c.conversation.status) : null;
               return (
                 <tr key={c.id} className="hover:bg-paper">
                   <td className="px-4 py-2.5">

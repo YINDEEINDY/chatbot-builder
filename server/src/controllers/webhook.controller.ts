@@ -61,12 +61,14 @@ export class WebhookController {
 
   /** POST /webhooks/facebook/:botId — Messenger + Instagram. */
   async receiveFacebook(req: RawRequest, res: Response) {
-    const secret = env.FACEBOOK_PAGES_APP_SECRET;
-    if (secret && !verifyMetaSignature(req.rawBody, req.get('x-hub-signature-256'), secret)) {
+    // Meta signs with the secret of whichever app owns the page subscription — accept either of ours.
+    const secrets = [env.FACEBOOK_PAGES_APP_SECRET, env.FACEBOOK_APP_SECRET].filter(Boolean);
+    const signature = req.get('x-hub-signature-256');
+    if (secrets.length && !secrets.some((s) => verifyMetaSignature(req.rawBody, signature, s))) {
       logger.warn('Facebook webhook: bad signature', { botId: req.params.botId });
       return res.sendStatus(401);
     }
-    if (!secret && env.NODE_ENV === 'production') return res.sendStatus(503); // never run unsigned in production
+    if (!secrets.length && env.NODE_ENV === 'production') return res.sendStatus(503); // never run unsigned in production
     res.sendStatus(200);
 
     const body = req.body as { object?: string; entry?: { messaging?: MetaEvent[] }[] };

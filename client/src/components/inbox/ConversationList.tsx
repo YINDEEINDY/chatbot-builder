@@ -2,7 +2,7 @@ import { Search } from 'lucide-react';
 import type { Conversation, ConversationStatus } from '../../types';
 import type { Assignee } from '../../api/conversations';
 import { Avatar } from './Avatar';
-import { STATUS, preview, shortTime, waited } from './format';
+import { STATUS, statusOf, preview, shortTime, waited } from './format';
 import { cn } from '../../utils/cn';
 
 export type StatusFilter = ConversationStatus | 'all';
@@ -89,7 +89,7 @@ export function ConversationList(p: Props) {
           </li>
         )}
         {p.conversations.map((c) => {
-          const st = STATUS[c.status];
+          const st = statusOf(c.status);
           const selected = c.id === p.selectedId;
           const unread = c.unreadCount > 0 && !selected;
           return (

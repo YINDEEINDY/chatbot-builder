@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Pencil, Plus, Trash2, X } from 'lucide-react';
 import type { Conversation } from '../../types';
 import { Avatar } from './Avatar';
-import { PLATFORM, STATUS, parseAttrs, waited } from './format';
+import { PLATFORM, statusOf, parseAttrs, waited } from './format';
 import { cn } from '../../utils/cn';
 
 interface Props {
@@ -17,7 +17,7 @@ export function Ticket({ conversation: c, onSave, onClose }: Props) {
   const [editing, setEditing] = useState(false);
   const [rows, setRows] = useState<[string, string][]>([]);
   const [saving, setSaving] = useState(false);
-  const st = STATUS[c.status];
+  const st = statusOf(c.status);
 
   useEffect(() => { setEditing(false); }, [c.id]);
   const startEdit = () => { setRows(Object.entries(attrs).length ? Object.entries(attrs) : [['', '']]); setEditing(true); };

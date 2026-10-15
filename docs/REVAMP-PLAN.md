@@ -44,6 +44,13 @@ AI ตอบเอง · broadcast ใหม่ · analytics ใหม่ · ล
 
 ## ก่อนขึ้น production (ยังไม่ได้ทำ — ต้องให้ยินดีตัดสินใจ)
 1. สำรองฐาน Supabase แล้ว `prisma db push` ด้วย `.env.supabase` — schema รอบนี้ **เพิ่มอย่างเดียว** (คอลัมน์ใหม่มีค่าเริ่มต้น ไม่มีการลบ)
+   แล้วปรับข้อมูลเก่าให้เข้าชื่อใหม่ (โค้ดรองรับชื่อเก่าอยู่แล้ว แต่ทำให้สะอาดดีกว่า):
+   ```sql
+   UPDATE "Conversation" SET status = 'open'     WHERE status = 'human';
+   UPDATE "Conversation" SET status = 'resolved' WHERE status = 'closed';
+   UPDATE "Message"      SET sender = 'bot'      WHERE direction = 'outgoing' AND sender = 'contact';
+   ```
+   ⚠️ `handoffOnFallback` ค่าเริ่มต้นเป็น true → บอทเดิมจะส่งข้อความที่ไม่ตรงกฎเข้าคิว "รอคนตอบ" ทันที ปิดได้ในหน้า "ช่องทาง"
 2. ตั้ง `FACEBOOK_PAGES_APP_SECRET` บน server (webhook FB ไม่รับของไม่มีลายเซ็นใน production)
 3. บอทเดิมที่ใช้ Block: เอนจิน Block ถูกถอดแล้ว — บอทจะใช้ flow ทักทาย/กฎ/ส่งต่อให้คนแทน ต้องสร้าง flow ใหม่ (ยังไม่มีตัวแปลง Block → Flow)
 4. ตั้ง `VITE_SERVER_PUBLIC_URL` ฝั่ง client ให้ชี้ server จริง (ใช้สร้าง Webhook URL ของ LINE และโค้ดฝัง widget)
