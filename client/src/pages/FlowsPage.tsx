@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Copy, Plus, Sparkles, Trash2, Workflow } from 'lucide-react';
+import { Copy, FilePlus2, Plus, Sparkles, Trash2, Workflow, X } from 'lucide-react';
 import { MainLayout } from '../components/layout/MainLayout';
 import { PageHeader, Notice, btnPrimary } from '../components/ui/kit';
-import { flowsApi } from '../api/flows';
+import { flowsApi, type FlowTemplateInfo } from '../api/flows';
 import { errorText } from '../api/replies';
 import { useBotStore } from '../stores/bot.store';
 import type { Flow, NodeData } from '../types';
@@ -34,11 +34,17 @@ export function FlowsPage() {
   const load = () => flowsApi.list(botId).then((r) => setFlows(r.data ?? [])).finally(() => setLoading(false));
   useEffect(() => { load(); loadBot(botId); }, [botId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const create = async () => {
+  const [gallery, setGallery] = useState(false);
+  const [templates, setTemplates] = useState<FlowTemplateInfo[]>([]);
+  const [creating, setCreating] = useState<string | null>(null);
+  useEffect(() => { if (gallery && !templates.length) flowsApi.templates(botId).then(setTemplates).catch(() => {}); }, [gallery, botId, templates.length]);
+
+  const create = async (template?: string) => {
+    setCreating(template ?? 'blank');
     try {
-      const r = await flowsApi.create(botId, { name: 'บอทถามตอบใหม่' });
-      navigate(`/bots/${botId}/flows/${r.data!.id}`);
-    } catch (e) { setError(errorText(e)); }
+      const flow = template ? await flowsApi.fromTemplate(botId, template) : (await flowsApi.create(botId, { name: 'บอทถามตอบใหม่' })).data!;
+      navigate(`/bots/${botId}/flows/${flow.id}`);
+    } catch (e) { setError(errorText(e)); setCreating(null); }
   };
 
   const remove = async (id: string) => {
@@ -52,7 +58,7 @@ export function FlowsPage() {
       <PageHeader
         title="บอทถามตอบ"
         sub="ชุดคำถามที่บอทถามลูกค้าทีละข้อด้วยปุ่ม เก็บคำตอบให้ แล้วส่งต่อให้คนเมื่อถึงเวลา"
-        action={<button onClick={create} className={btnPrimary}><Plus className="h-4 w-4" />สร้างบอทใหม่</button>}
+        action={<button onClick={() => setGallery(true)} className={btnPrimary}><Plus className="h-4 w-4" />สร้างบอทใหม่</button>}
       />
       {error && <div className="mb-4"><Notice tone="error">{error}</Notice></div>}
       {loading && <p className="text-sm text-ink-soft">กำลังโหลด</p>}
@@ -94,6 +100,41 @@ export function FlowsPage() {
         <div className="rounded-xl border border-dashed border-gray-300 px-6 py-14 text-center">
           <p className="font-medium">ยังไม่มีบอทถามตอบ</p>
           <p className="mt-1 text-sm text-ink-soft">เริ่มจากคำถามที่คุณต้องถามลูกค้าทุกครั้ง เช่น สนใจสินค้าอะไร ขอเบอร์โทร</p>
+        </div>
+      )}
+      {gallery && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/40 p-4 md:p-10" onMouseDown={() => setGallery(false)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="gallery-title" className="w-full max-w-4xl rounded-2xl bg-surface p-5 shadow-2xl md:p-7" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <h2 id="gallery-title" className="text-lg font-semibold">เริ่มจากเทมเพลต</h2>
+                <p className="text-sm text-ink-soft">เลือกแบบที่ใกล้ร้านคุณที่สุด แล้วแก้คำถามต่อได้ทุกข้อ ทุกแบบจบด้วยการส่งต่อให้คนพร้อมข้อมูลที่เก็บได้</p>
+              </div>
+              <button onClick={() => setGallery(false)} className="rounded-lg p-1.5 text-ink-soft hover:bg-gray-100" aria-label="ปิด"><X className="h-5 w-5" /></button>
+            </div>
+            <ul className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {templates.map((t) => (
+                <li key={t.key} className="flex flex-col rounded-xl border border-line p-4 hover:border-gray-400">
+                  <h3 className="font-semibold leading-snug">{t.name}</h3>
+                  <p className="mt-1 text-[13px] text-ink-soft">{t.description}</p>
+                  <div className="mt-3 flex flex-wrap gap-1">
+                    {t.collects.map((c) => <span key={c} className="rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] text-ink-soft">{c}</span>)}
+                  </div>
+                  <div className="mt-auto flex items-center justify-between pt-4">
+                    <span className="text-xs text-ink-soft">ถาม {t.questions} ข้อ</span>
+                    <button onClick={() => create(t.key)} disabled={!!creating} className="rounded-lg bg-jade-600 px-3 py-1.5 text-[13px] font-medium text-white hover:bg-jade-700 disabled:opacity-50">{creating === t.key ? 'กำลังสร้าง' : 'ใช้เทมเพลตนี้'}</button>
+                  </div>
+                </li>
+              ))}
+              <li className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 p-4 text-center">
+                <FilePlus2 className="h-6 w-6 text-ink-soft" />
+                <p className="mt-2 text-sm font-medium">เริ่มจากหน้าว่าง</p>
+                <p className="text-xs text-ink-soft">วางขั้นตอนเองทั้งหมด</p>
+                <button onClick={() => create()} disabled={!!creating} className="mt-3 rounded-lg border border-gray-300 px-3 py-1.5 text-[13px] hover:bg-gray-50 disabled:opacity-50">{creating === 'blank' ? 'กำลังสร้าง' : 'สร้างหน้าว่าง'}</button>
+              </li>
+            </ul>
+            {!templates.length && <p className="mt-4 text-sm text-ink-soft">กำลังโหลดเทมเพลต</p>}
+          </div>
         </div>
       )}
     </MainLayout>

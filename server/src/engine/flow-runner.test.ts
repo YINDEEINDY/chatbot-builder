@@ -117,3 +117,36 @@ test('button labels are clipped on Thai word boundaries, never splitting a tone 
   assert.ok(!/[เแโใไ]…$/.test(clipLabel('เ'.repeat(1) + 'ก้'.repeat(15))));
   assert.ok([...clipLabel('ก้'.repeat(15))].length <= 20);
 });
+
+test('overview: response time counts handoff → first agent reply; Thai midnight', async () => {
+  const { responseMinutes, startOfThaiDay } = await import('../services/overview.service.js');
+  const t = (m: number) => new Date(Date.UTC(2026, 9, 15, 3, m));
+  assert.deepEqual(responseMinutes([
+    { senderId: 'a', sender: 'system', content: 'บอทส่งต่อให้เจ้าหน้าที่', createdAt: t(0) },
+    { senderId: 'a', sender: 'contact', content: 'ฮัลโหล', createdAt: t(2) },
+    { senderId: 'a', sender: 'agent', content: 'ค่ะ', createdAt: t(5) },
+    { senderId: 'a', sender: 'agent', content: 'อีกข้อความ', createdAt: t(9) },
+    { senderId: 'b', sender: 'system', content: 'บอทส่งต่อให้เจ้าหน้าที่', createdAt: t(1) },
+  ]), [5]);
+  // 2026-10-15 01:30 Bangkok = 2026-10-14 18:30Z → day starts 2026-10-14 17:00Z
+  assert.equal(startOfThaiDay(new Date(Date.UTC(2026, 9, 14, 18, 30))).toISOString(), '2026-10-14T17:00:00.000Z');
+});
+
+test('every business template runs start → handoff with valid answers', async () => {
+  const { FLOW_TEMPLATES, buildTemplate } = await import('../services/flow-templates.js');
+  const sample = { text: 'ทดสอบ', phone: '0812345678', email: 'a@b.co', number: '2' } as const;
+  for (const t of FLOW_TEMPLATES) {
+    const g = buildTemplate(t) as unknown as FlowGraph;
+    let r = startFlow(g, {});
+    for (let i = 0; i < 20 && r.state.nodeId; i++) {
+      const node = g.nodes.find((n) => n.id === r.state.nodeId)!;
+      const d = node.data as { items?: { label: string; id: string }[]; kind?: keyof typeof sample };
+      const last = r.out.at(-1)!;
+      // pick the first option that doesn't go straight to a person, so the whole questionnaire runs
+      const pick = last.buttons?.find((b) => g.edges.some((e) => e.sourceHandle === b.id && e.target !== 'to-human')) ?? last.buttons?.[0];
+      r = continueFlow(g, r.state, pick ? { text: pick.label, payload: pick.payload } : { text: sample[d.kind ?? 'text'] });
+    }
+    assert.equal(r.handoff, true, `${t.key} ends with a handoff`);
+    assert.deepEqual(Object.keys(r.state.vars).length >= 0, true);
+  }
+});

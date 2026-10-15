@@ -24,6 +24,8 @@ export const conversationsApi = {
     (await apiClient.put<ApiResponse<Conversation>>(`${base(botId)}/${conversationId}/close`)).data,
   sendMessage: async (botId: string, conversationId: string, content: string) =>
     (await apiClient.post<ApiResponse<Message>>(`${base(botId)}/${conversationId}/messages`, { content })).data,
+  saveProfile: async (botId: string, contactId: string, data: { tags?: string[]; notes?: string | null }) =>
+    (await apiClient.put<ApiResponse<Contact>>(`/bots/${botId}/contacts/${contactId}/profile`, data)).data,
   saveAttributes: async (botId: string, contactId: string, attributes: Record<string, string>) =>
     (await apiClient.put<ApiResponse<Contact>>(`/bots/${botId}/contacts/${contactId}/attributes`, attributes)).data,
 };

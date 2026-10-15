@@ -6,6 +6,7 @@ import { RegisterPage } from './pages/Register';
 import { AuthCallbackPage } from './pages/AuthCallback';
 import { BotListPage } from './pages/BotList';
 import { InboxPage } from './pages/InboxPage';
+import { OverviewPage } from './pages/OverviewPage';
 
 // Heavier / less-used screens load on demand (the flow editor pulls in xyflow, analytics pulls in recharts).
 const FlowsPage = lazy(() => import('./pages/FlowsPage').then((m) => ({ default: m.FlowsPage })));
@@ -44,10 +45,11 @@ function Public({ children }: { children: React.ReactNode }) {
 
 function ToInbox() {
   const { botId } = useParams();
-  return <Navigate to={`/bots/${botId}/inbox`} replace />;
+  return <Navigate to={`/bots/${botId}/overview`} replace />;
 }
 
 const botPages: [string, React.ReactNode][] = [
+  ['overview', <OverviewPage />],
   ['inbox', <InboxPage />],
   ['flows', <FlowsPage />],
   ['flows/:flowId', <FlowEditorPage />],

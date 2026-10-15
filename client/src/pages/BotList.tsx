@@ -89,7 +89,7 @@ export function BotListPage() {
               ))}
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <Link to={`/bots/${b.id}/inbox`} className={btnPrimary}><MessagesSquare className="h-4 w-4" />เปิดแชท</Link>
+              <Link to={`/bots/${b.id}/overview`} className={btnPrimary}><MessagesSquare className="h-4 w-4" />เข้าร้าน</Link>
               <Link to={`/bots/${b.id}/channels`} className={btnGhost}>ตั้งค่า</Link>
               {confirm?.id === b.id ? (
                 <span className="ml-auto flex items-center gap-2">

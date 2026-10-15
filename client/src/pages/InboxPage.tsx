@@ -10,6 +10,7 @@ import { cannedApi, errorText } from '../api/replies';
 import { socketService } from '../services/socket';
 import type { CannedResponse, Conversation, ConversationStatus, Message } from '../types';
 import { cn } from '../utils/cn';
+import { useAuthStore } from '../stores/auth.store';
 
 export function InboxPage() {
   const { botId = '' } = useParams();
@@ -133,6 +134,42 @@ export function InboxPage() {
     }
   };
 
+  const saveProfile = async (data: { tags?: string[]; notes?: string | null }) => {
+    if (!current) return false;
+    try {
+      const r = await conversationsApi.saveProfile(botId, current.contactId, data);
+      if (r.data) setCurrent((prev) => prev && { ...prev, contact: { ...prev.contact, tags: r.data!.tags, notes: r.data!.notes } });
+      return true;
+    } catch (e) {
+      setError(errorText(e));
+      return false;
+    }
+  };
+
+  // Keyboard: J/K move through the list, A take the chat, E resolve (ignored while typing)
+  const meId = useAuthStore((st) => st.user?.id);
+  const keysRef = useRef({ conversations, selectedId, current });
+  keysRef.current = { conversations, selectedId, current };
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (e.ctrlKey || e.metaKey || e.altKey || el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el?.isContentEditable) return;
+      const { conversations: list, selectedId: sel, current: cur } = keysRef.current;
+      const i = list.findIndex((c) => c.id === sel);
+      const k = e.key.toLowerCase();
+      if (k === 'j' || k === 'k') {
+        const next = list[k === 'j' ? Math.min(i + 1, list.length - 1) : Math.max(i - 1, 0)] ?? list[0];
+        if (next) { e.preventDefault(); setParams({ c: next.id }); }
+      } else if (k === 'a' && cur && (cur.status === 'bot' || cur.status === 'pending')) {
+        e.preventDefault(); act(() => conversationsApi.takeover(botId, cur.id));
+      } else if (k === 'e' && cur && cur.status !== 'resolved') {
+        e.preventDefault(); act(() => conversationsApi.close(botId, cur.id));
+      }
+    };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [botId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const saveAttrs = async (attrs: Record<string, string>) => {
     if (!current) return false;
     try {
@@ -166,6 +203,7 @@ export function InboxPage() {
             onStatus={setStatus}
             search={search}
             onSearch={setSearch}
+            meId={meId}
           />
         </div>
 
@@ -188,12 +226,12 @@ export function InboxPage() {
               />
             </div>
             <div className="hidden w-[320px] shrink-0 border-l border-line xl:block 2xl:w-[340px]">
-              <Ticket conversation={current} onSave={saveAttrs} />
+              <Ticket conversation={current} onSave={saveAttrs} onSaveProfile={saveProfile} />
             </div>
             {ticketOpen && (
               <div className="fixed inset-0 z-50 flex justify-end bg-ink/30 xl:hidden" onClick={() => setTicketOpen(false)}>
                 <div className="h-full w-[min(360px,92vw)] border-l border-line shadow-xl" onClick={(e) => e.stopPropagation()}>
-                  <Ticket conversation={current} onSave={saveAttrs} onClose={() => setTicketOpen(false)} />
+                  <Ticket conversation={current} onSave={saveAttrs} onSaveProfile={saveProfile} onClose={() => setTicketOpen(false)} />
                 </div>
               </div>
             )}

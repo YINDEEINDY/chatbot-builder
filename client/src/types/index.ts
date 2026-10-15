@@ -115,6 +115,7 @@ export interface Contact {
   platform: Platform;
   lastSeenAt: string;
   attributes: string; // JSON {variable: answer} collected by questionnaires
+  notes?: string | null;
   messageCount: number;
   tags: string; // JSON array
   isSubscribed: boolean;

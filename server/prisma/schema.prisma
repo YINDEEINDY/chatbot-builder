@@ -149,6 +149,7 @@ model Contact {
   messageCount         Int                    @default(0)
   tags                 String                 @default("[]") @db.Text // JSON array of tags
   attributes           String                 @default("{}") @db.Text // JSON ข้อมูลที่เก็บจากแบบสอบถาม
+  notes                String?                @db.Text // โน้ตภายในทีม ลูกค้าไม่เห็น
   isSubscribed         Boolean                @default(true)
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt

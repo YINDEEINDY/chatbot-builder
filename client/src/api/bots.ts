@@ -32,6 +32,9 @@ export const botsApi = {
     return response.data;
   },
 
+  overview: async (id: string) =>
+    (await apiClient.get<ApiResponse<ShopOverview>>(`/bots/${id}/overview`)).data.data!,
+
   channelStatus: async (id: string) =>
     (await apiClient.get<ApiResponse<ChannelStatus>>(`/bots/${id}/channel-status`)).data.data!,
 
@@ -47,4 +50,10 @@ export interface ChannelStatus {
   instagram: { connected: boolean; username?: string | null; dmUrl?: string };
   web: { scriptUrl: string; demoUrl: string };
   publicUrlOk: boolean;
+}
+
+export interface ShopOverview {
+  now: { pending: number; open: number; bot: number; oldestWaiting: { conversationId: string; name: string | null; since: string | null } | null };
+  today: { customers: number; customersYesterday: number; hourly: number[]; newCustomers: number; incoming: number; botOnly: number; botShare: number | null; medianResponseMin: number | null };
+  setup: { channel: boolean; bot: boolean; rules: boolean; canned: boolean; tested: boolean; active: boolean };
 }

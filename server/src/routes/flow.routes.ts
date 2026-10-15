@@ -5,6 +5,7 @@ import { validate } from '../middlewares/validate.js';
 import type { Response, NextFunction } from 'express';
 import { prisma } from '../config/db.js';
 import type { AuthRequest } from '../middlewares/auth.js';
+import { FLOW_TEMPLATES, buildTemplate } from '../services/flow-templates.js';
 import { startFlow, continueFlow, type FlowGraph, type RunState } from '../engine/flow-runner.js';
 import { createFlowSchema, updateFlowSchema, flowIdSchema, botIdParamSchema } from '../schemas/index.js';
 
@@ -19,6 +20,22 @@ router.put('/:flowId', validate(updateFlowSchema), flowController.updateFlow.bin
 router.delete('/:flowId', validate(flowIdSchema), flowController.deleteFlow.bind(flowController));
 router.post('/:flowId/set-default', validate(flowIdSchema), flowController.setDefaultFlow.bind(flowController));
 router.post('/:flowId/duplicate', validate(flowIdSchema), flowController.duplicateFlow.bind(flowController));
+
+// Template gallery: list, then create a flow from one.
+router.get('/templates/list', (_req, res) => {
+  res.json({ success: true, data: FLOW_TEMPLATES.map(({ key, name, description, collects, steps }) => ({ key, name, description, collects, questions: steps.filter((s) => s.kind !== 'message' && s.kind !== 'handoff').length })) });
+});
+router.post('/templates/:key', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const bot = await prisma.bot.findFirst({ where: { id: req.params.botId as string, userId: req.userId } });
+    if (!bot) return res.status(404).json({ success: false, message: 'Bot not found' });
+    const t = FLOW_TEMPLATES.find((x) => x.key === req.params.key);
+    if (!t) return res.status(404).json({ success: false, message: 'Template not found' });
+    const { nodes, edges } = buildTemplate(t);
+    const flow = await prisma.flow.create({ data: { botId: bot.id, name: t.name, nodes: JSON.stringify(nodes), edges: JSON.stringify(edges) } });
+    res.status(201).json({ success: true, data: flow });
+  } catch (e) { next(e); }
+});
 
 // Try a flow from the editor without saving or messaging anyone: pure runner, no DB writes.
 router.post('/:flowId/simulate', validate(flowIdSchema), async (req: AuthRequest, res: Response, next: NextFunction) => {

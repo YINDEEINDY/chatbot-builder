@@ -1,6 +1,7 @@
 import { prisma } from '../config/db.js';
 import type { AuthRequest } from '../middlewares/auth.js';
 import { channelStatus, connectLine } from '../channels/setup.js';
+import { shopOverview } from '../services/overview.service.js';
 import { Router } from 'express';
 import { botController } from '../controllers/bot.controller.js';
 import { auth } from '../middlewares/auth.js';
@@ -36,6 +37,11 @@ router.post('/:id/line/connect', async (req: AuthRequest, res, next) => {
     }
     res.json({ success: true, data: await connectLine(bot, secret, token.trim()) });
   } catch (e) { next(e); }
+});
+
+router.get('/:id/overview', async (req: AuthRequest, res, next) => {
+  try { res.json({ success: true, data: await shopOverview(req.params.id as string, req.userId!) }); }
+  catch (e) { next(e); }
 });
 
 export default router;

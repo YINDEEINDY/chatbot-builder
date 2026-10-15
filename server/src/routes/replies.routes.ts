@@ -93,3 +93,16 @@ attributeRoutes.put('/:contactId/attributes', h(async (req, botId) => {
   await mine(prisma.contact.findFirst({ where: { id: req.params.contactId as string, botId } }));
   return prisma.contact.update({ where: { id: req.params.contactId as string }, data: { attributes: JSON.stringify(attrs) } });
 }));
+
+// Labels + internal note on a contact (shown in ใบรับเรื่อง; customers never see them)
+attributeRoutes.put('/:contactId/profile', h(async (req, botId) => {
+  const body = z.object({
+    tags: z.array(z.string().trim().min(1).max(30)).max(20).optional(),
+    notes: z.string().max(5000).nullable().optional(),
+  }).parse(req.body);
+  await mine(prisma.contact.findFirst({ where: { id: req.params.contactId as string, botId } }));
+  return prisma.contact.update({
+    where: { id: req.params.contactId as string },
+    data: { ...(body.tags && { tags: JSON.stringify([...new Set(body.tags)]) }), ...(body.notes !== undefined && { notes: body.notes }) },
+  });
+}));

@@ -47,6 +47,12 @@ export const flowsApi = {
     return response.data;
   },
 
+  templates: async (botId: string) =>
+    (await apiClient.get<ApiResponse<FlowTemplateInfo[]>>(`/bots/${botId}/flows/templates/list`)).data.data ?? [],
+
+  fromTemplate: async (botId: string, key: string) =>
+    (await apiClient.post<ApiResponse<Flow>>(`/bots/${botId}/flows/templates/${key}`)).data.data!,
+
   simulate: async (botId: string, flowId: string, body: { nodes: FlowNode[]; edges: FlowEdge[]; state?: SimState; text?: string; payload?: string }) => {
     const response = await apiClient.post<ApiResponse<SimResult>>(`/bots/${botId}/flows/${flowId}/simulate`, body);
     return response.data.data!;
@@ -60,3 +66,5 @@ export interface SimResult {
   saved: Record<string, string>;
   handoff: boolean;
 }
+
+export interface FlowTemplateInfo { key: string; name: string; description: string; collects: string[]; questions: number }
