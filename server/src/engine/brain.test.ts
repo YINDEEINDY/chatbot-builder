@@ -131,11 +131,15 @@ test('webhook signatures and event mapping', () => {
   assert.equal(metaEventToInbound({ sender: { id: 'P' }, message: { mid: 'm', text: 'A', quick_reply: { payload: 'rd:q:a' } } }, 'facebook')?.payload, 'rd:q:a');
 });
 
-test('LINE message limits: ≤13 quick replies, labels clipped to 20 chars', () => {
-  const buttons = Array.from({ length: 15 }, (_, i) => ({ id: `${i}`, label: `ตัวเลือกที่ยาวมากเกินยี่สิบตัวอักษร ${i}`, payload: `rd:n:${i}` }));
-  const [msg] = toLineMessages([{ text: 'เลือก', buttons }]) as { quickReply: { items: { action: { label: string } }[] } }[];
-  assert.equal(msg.quickReply.items.length, 13);
-  assert.ok(msg.quickReply.items.every((i) => [...i.action.label].length <= 20));
+test('LINE: options go out as a Flex bubble (works on LINE PC, stays in chat), ≤13 buttons, labels ≤40', () => {
+  const buttons = Array.from({ length: 15 }, (_, i) => ({ id: `${i}`, label: `ตัวเลือกที่ยาวมากเกินสี่สิบตัวอักษรแน่นอนเลยนะคะลูกค้า ${i}`, payload: `rd:n:${i}` }));
+  const [msg] = toLineMessages([{ text: 'เลือก', buttons }]) as { type: string; altText: string; contents: { footer: { contents: { action: { label: string; displayText: string } }[] } } }[];
+  assert.equal(msg.type, 'flex');
+  assert.ok(msg.altText.startsWith('เลือก\n\n1. '), msg.altText);
+  const items = msg.contents.footer.contents;
+  assert.equal(items.length, 13);
+  assert.ok(items.every((i) => [...i.action.label].length <= 40));
+  assert.deepEqual(toLineMessages([{ text: 'สวัสดี' }]), [{ type: 'text', text: 'สวัสดี' }]);
 });
 
 test('pre-revamp rows: status "human" keeps the bot silent, "closed" restarts with the bot', async () => {

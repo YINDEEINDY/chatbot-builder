@@ -2,7 +2,7 @@
 import type { Bot, Contact } from '@prisma/client';
 import type { OutMessage } from '../engine/flow-runner.js';
 import type { DeliveryContext } from './index.js';
-import { clipLabel } from './text.js';
+import { clipLabel, withNumbers } from './text.js';
 import { decrypt, isEncrypted } from '../utils/crypto.js';
 import { logger } from '../utils/logger.js';
 
@@ -28,7 +28,7 @@ export async function sendFacebook(bot: Bot, contact: Contact, messages: OutMess
     }
     if (m.text || m.buttons?.length) {
       bodies.push({
-        text: m.text || ' ',
+        text: (m.buttons?.length ? withNumbers(m.text, m.buttons.map((b) => b.label)) : m.text) || ' ',
         ...(m.buttons?.length && {
           quick_replies: m.buttons.slice(0, 13).map((b) => ({ content_type: 'text', title: clipLabel(b.label), payload: b.payload })),
         }),

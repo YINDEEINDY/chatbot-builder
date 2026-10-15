@@ -22,3 +22,12 @@ export const clipLabel = (s: string, max = 20) => {
   }
   return out.trimEnd() + '…';
 };
+
+/**
+ * Options written into the question as a numbered list. Shown where buttons are not:
+ * Instagram/LINE on desktop, Messenger on some desktop surfaces, and after quick replies
+ * vanish (they disappear once tapped or when the next message arrives). The bot accepts
+ * a typed number. Keep in sync with client/src/components/flow-builder/platformMock.tsx.
+ */
+export const withNumbers = (text: string, labels: string[]) =>
+  labels.length ? `${text}\n\n${labels.map((l, i) => `${i + 1}. ${l}`).join('\n')}` : text;

@@ -51,11 +51,15 @@ export function metaEventToInbound(event: MetaEvent, platform: 'facebook' | 'ins
 }
 
 export class WebhookController {
-  /** GET — Meta subscription handshake. */
+  /** GET — Meta subscription handshake. /facebook uses FACEBOOK_VERIFY_TOKEN; legacy /facebook/:botId uses the bot's token. */
   async verifyFacebook(req: Request, res: Response) {
     if (req.query['hub.mode'] !== 'subscribe') return res.sendStatus(403);
-    const bot = await prisma.bot.findUnique({ where: { id: req.params.botId as string } });
-    if (!bot || req.query['hub.verify_token'] !== bot.webhookVerifyToken) return res.sendStatus(403);
+    const token = String(req.query['hub.verify_token'] ?? '');
+    const botId = req.params.botId as string | undefined;
+    const ok = botId
+      ? (await prisma.bot.findUnique({ where: { id: botId } }))?.webhookVerifyToken === token
+      : !!env.FACEBOOK_VERIFY_TOKEN && token === env.FACEBOOK_VERIFY_TOKEN;
+    if (!ok) return res.sendStatus(403);
     res.status(200).send(req.query['hub.challenge']);
   }
 
@@ -71,13 +75,17 @@ export class WebhookController {
     if (!secrets.length && env.NODE_ENV === 'production') return res.sendStatus(503); // never run unsigned in production
     res.sendStatus(200);
 
-    const body = req.body as { object?: string; entry?: { messaging?: MetaEvent[] }[] };
+    const body = req.body as { object?: string; entry?: { id: string; messaging?: MetaEvent[] }[] };
     if (body.object !== 'page' && body.object !== 'instagram') return;
     const platform = body.object === 'instagram' ? 'instagram' : 'facebook';
+    const botId = req.params.botId as string | undefined;
     background('facebook webhook', async () => {
-      const bot = await prisma.bot.findUnique({ where: { id: req.params.botId as string } });
-      if (!bot?.isActive) return;
       for (const entry of body.entry ?? []) {
+        // Shared endpoint: entry.id is the Page id (Messenger) or the Instagram account id.
+        const bot = botId
+          ? await prisma.bot.findUnique({ where: { id: botId } })
+          : await prisma.bot.findFirst({ where: { OR: [{ facebookPageId: entry.id }, { igUserId: entry.id }] } });
+        if (!bot?.isActive) continue;
         for (const event of entry.messaging ?? []) { // `feed` (comment) entries have no messaging array
           const inbound = metaEventToInbound(event, platform);
           if (inbound) await handleInbound(bot, inbound);

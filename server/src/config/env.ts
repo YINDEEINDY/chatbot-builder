@@ -16,6 +16,8 @@ export const env = {
   // Facebook OAuth - Pages app (for page connection)
   FACEBOOK_PAGES_APP_ID: process.env.FACEBOOK_PAGES_APP_ID || '',
   FACEBOOK_PAGES_APP_SECRET: process.env.FACEBOOK_PAGES_APP_SECRET || '',
+  // One webhook for every page (Meta allows a single callback URL per app): /api/webhooks/facebook
+  FACEBOOK_VERIFY_TOKEN: process.env.FACEBOOK_VERIFY_TOKEN || '',
   FACEBOOK_PAGES_REDIRECT_URI: process.env.FACEBOOK_PAGES_REDIRECT_URI || 'http://localhost:3001/api/auth/facebook/pages/callback',
 
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',

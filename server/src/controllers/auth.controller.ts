@@ -4,7 +4,7 @@ import { notificationService } from '../services/notification.service.js';
 import { AuthRequest } from '../middlewares/auth.js';
 import { env } from '../config/env.js';
 import { prisma } from '../config/db.js';
-import { encrypt } from '../utils/crypto.js';
+import { encrypt, decrypt, isEncrypted } from '../utils/crypto.js';
 import { logger } from '../utils/logger.js';
 
 // Temporary storage for Facebook Pages OAuth sessions
@@ -336,12 +336,13 @@ export class AuthController {
         });
       }
 
-      // Subscribe the page to webhook events (messages, postbacks, etc.)
+      // Subscribe the page to webhook events. A failure is reported back — without it no message ever arrives.
+      let webhookError: string | null = null;
       try {
         await authService.subscribePageToWebhooks(selectedPage.accessToken, selectedPage.id);
       } catch (subscribeError: any) {
+        webhookError = subscribeError.message;
         logger.error('Failed to subscribe page to webhooks:', subscribeError.message);
-        // Continue with connection even if subscription fails - user can retry
       }
 
       // Page token is non-expiring (obtained via long-lived user token)
@@ -373,6 +374,8 @@ export class AuthController {
           igUserId: updatedBot.igUserId,
           igUsername: updatedBot.igUsername,
           isActive: updatedBot.isActive,
+          webhookSubscribed: !webhookError,
+          webhookError,
         },
       });
     } catch (error) {
@@ -397,7 +400,13 @@ export class AuthController {
         });
       }
 
-      // Update bot to remove Facebook Page and Instagram info
+      // Stop Meta sending this page's messages to us (best effort), then forget the page.
+      // The shop stays active: LINE and the web widget keep working.
+      if (bot.facebookPageId && bot.facebookToken) {
+        const token = isEncrypted(bot.facebookToken) ? decrypt(bot.facebookToken) : bot.facebookToken;
+        await fetch(`https://graph.facebook.com/v21.0/${bot.facebookPageId}/subscribed_apps`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } })
+          .catch(() => undefined);
+      }
       const updatedBot = await prisma.bot.update({
         where: { id: botId },
         data: {
@@ -406,7 +415,6 @@ export class AuthController {
           facebookToken: null,
           igUserId: null,
           igUsername: null,
-          isActive: false,
         },
       });
 
@@ -419,7 +427,7 @@ export class AuthController {
           facebookPageName: null,
           igUserId: null,
           igUsername: null,
-          isActive: false,
+          isActive: updatedBot.isActive,
         },
       });
     } catch (error) {

@@ -111,7 +111,7 @@ function Editor({ botId, flowId, onSave, previewOpen, onClosePreview }: Props) {
         </div>
       )}
       {previewOpen && (
-        <div className="absolute inset-0 z-30 md:static md:z-auto md:w-[380px] md:shrink-0">
+        <div className="absolute inset-0 z-30 md:static md:z-auto md:w-[400px] md:shrink-0">
           <FlowPreview botId={botId} flowId={flowId} onClose={onClosePreview} />
         </div>
       )}

@@ -4,6 +4,10 @@ import { flowsApi, type SimResult, type SimState } from '../../api/flows';
 import { useFlowStore } from '../../stores/flow.store';
 import type { FlowEdge, FlowNode } from '../../types';
 import { cn } from '../../utils/cn';
+import { useBotStore } from '../../stores/bot.store';
+import { PLATFORM_NOTES, PlatformMock, type MockDevice, type MockPlatform } from './platformMock';
+
+const PLATFORMS: [MockPlatform, string][] = [['web', 'เว็บไซต์'], ['messenger', 'Messenger'], ['line', 'LINE'], ['instagram', 'Instagram']];
 
 type Line = { from: 'bot' | 'me' | 'note'; text: string; buttons?: SimResult['out'][number]['buttons'] };
 
@@ -16,6 +20,9 @@ export function FlowPreview({ botId, flowId, onClose }: { botId: string; flowId:
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const end = useRef<HTMLDivElement>(null);
+  const [platform, setPlatform] = useState<MockPlatform>('messenger');
+  const [device, setDevice] = useState<MockDevice>('mobile');
+  const shopName = useBotStore((st) => st.currentBot?.name) ?? 'ร้านของคุณ';
 
   const graph = () => ({
     nodes: nodes.map((n) => ({ id: n.id, type: n.type, position: n.position, data: n.data })) as FlowNode[],
@@ -71,7 +78,28 @@ export function FlowPreview({ botId, flowId, onClose }: { botId: string; flowId:
         <button onClick={onClose} className="rounded-lg p-1.5 text-ink-soft hover:bg-gray-100" aria-label="ปิด"><X className="h-4 w-4" /></button>
       </header>
 
-      <div className="flex-1 space-y-2 overflow-y-auto p-4 scroll-thin">
+      <div className="space-y-2 border-b border-line bg-surface px-4 py-2.5">
+        <div className="flex flex-wrap gap-1" role="tablist" aria-label="ดูแบบที่ลูกค้าเห็นบน">
+          {PLATFORMS.map(([p, label]) => (
+            <button key={p} role="tab" aria-selected={platform === p} onClick={() => setPlatform(p)} className={cn('rounded-full border px-2.5 py-1 text-xs', platform === p ? 'border-ink bg-ink text-white' : 'border-line text-ink-soft hover:border-gray-400')}>{label}</button>
+          ))}
+          <span className="ml-auto flex overflow-hidden rounded-full border border-line text-xs">
+            {(['mobile', 'desktop'] as const).map((d) => (
+              <button key={d} onClick={() => setDevice(d)} aria-pressed={device === d} className={cn('px-2.5 py-1', device === d ? 'bg-jade-50 font-medium text-jade-800' : 'text-ink-soft')}>{d === 'mobile' ? 'มือถือ' : 'คอม'}</button>
+            ))}
+          </span>
+        </div>
+        <p className="text-[11px] leading-snug text-ink-soft">{PLATFORM_NOTES[platform][device]}</p>
+      </div>
+
+      {platform !== 'web' && (
+        <div className="flex-1 overflow-y-auto bg-gray-100 p-4 scroll-thin">
+          <PlatformMock platform={platform} device={device} shopName={shopName} lines={lines} waiting={waiting} onTap={(label, payload) => reply(label, payload)} />
+          {error && <p className="mt-2 text-xs text-red-700" role="alert">{error}</p>}
+        </div>
+      )}
+
+      <div className={cn('flex-1 space-y-2 overflow-y-auto p-4 scroll-thin', platform !== 'web' && 'hidden')}>
         {lines.map((l, i) => l.from === 'note' ? (
           <p key={i} className="flex items-center justify-center gap-1.5 py-1 text-center text-xs text-marigold-700"><Hand className="h-3.5 w-3.5" />{l.text}</p>
         ) : (

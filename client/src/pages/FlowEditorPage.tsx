@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useBlocker, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, MessageCircleQuestion, Redo2, Undo2 } from 'lucide-react';
 import { useFlowStore } from '../stores/flow.store';
+import { useBotStore } from '../stores/bot.store';
 import { flowsApi } from '../api/flows';
 import { FlowEditor } from '../components/flow-builder/FlowEditor';
 import { errorText } from '../api/replies';
@@ -15,7 +16,8 @@ export function FlowEditorPage() {
   const [error, setError] = useState('');
   const [justSaved, setJustSaved] = useState(false);
 
-  useEffect(() => { loadFlow(botId, flowId); }, [botId, flowId, loadFlow]);
+  const loadBot = useBotStore((st) => st.loadBot);
+  useEffect(() => { loadFlow(botId, flowId); loadBot(botId); }, [botId, flowId, loadFlow, loadBot]);
   useEffect(() => { if (currentFlow) setName(currentFlow.name); }, [currentFlow]);
 
   // Unsaved work: warn on tab close and on in-app navigation.

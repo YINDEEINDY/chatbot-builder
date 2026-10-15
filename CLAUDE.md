@@ -51,6 +51,8 @@ realtime.ts          Socket.IO: namespace หลัก = แอดมิน (JWT
 - 🚨 Postgres บน Windows: `initdb` ค่าเริ่มต้นเป็น WIN1252 → บันทึกภาษาไทยพัง (`22P05`) · `scripts/dev-db.mjs` บังคับ UTF8 แล้ว
 - 🚨 Postgres ไม่ยอมรันใต้บัญชี admin ของ Windows → สคริปต์สั่งผ่าน `pg_ctl` (ลดสิทธิ์ให้เอง)
 - 🚨 comment ใน CSS ห้ามมี `*/` กลางประโยค (เช่น `blue-*/gray-*`) — ปิด comment ก่อนเวลาแล้ว `@theme` ทั้งก้อนหาย
+- **ปุ่มคำถามแต่ละแพลตฟอร์ม** (เอกสารทางการ ต.ค. 2569): Messenger/IG ใช้ quick reply (หายหลังกด, IG บนคอมไม่แสดง) จึงแนบรายการเลขข้อในข้อความเสมอ · LINE ส่งเป็น Flex bubble มีปุ่ม (ใช้ได้บน LINE PC และค้างในแชท — quick reply ของ LINE ไม่แสดงบนคอม) · หน้าจำลองใน "ทดลองคุย" อยู่ที่ `client/src/components/flow-builder/platformMock.tsx`
+- **เชื่อมช่องทาง**: LINE ตั้งและทดสอบ webhook ผ่าน API ให้เอง (`server/src/channels/setup.ts`) แต่ "Use webhook" กับปิดข้อความตอบกลับอัตโนมัติใน OA Manager ต้องกดเอง · Facebook ใช้ Callback URL เดียว `/api/webhooks/facebook` + `FACEBOOK_VERIFY_TOKEN` แยกร้านจาก page id (`/facebook/:botId` เดิมยังใช้ได้)
 - Production ต้องมี `FACEBOOK_PAGES_APP_SECRET` (webhook ไม่ยอมรับของที่ไม่มีลายเซ็น) และ `JWT_SECRET` จริง
 - `JWT_SECRET` ใช้สร้างกุญแจเข้ารหัส token ของเพจ/LINE ด้วย — เปลี่ยนแล้วต้องเชื่อมช่องทางใหม่
 - หน้าตา: token สีอยู่ใน `client/src/index.css` (`@theme`) · ส้มดาวเรือง (marigold) = "รอคนตอบ" ใช้ที่อื่นไม่ได้
