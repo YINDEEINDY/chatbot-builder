@@ -1,221 +1,142 @@
-import { Request, Response, NextFunction } from 'express';
+// Inbound webhooks. Every handler: verify signature → ack 200 at once → process in the background
+// (platforms retry slow webhooks, and retries are de-duplicated by externalId in brain.ts).
+import { Request, Response } from 'express';
+import crypto from 'crypto';
+import type { Bot } from '@prisma/client';
 import { prisma } from '../config/db.js';
-import { flowExecutorService } from '../services/flow-executor.service.js';
-import { conversationService } from '../services/conversation.service.js';
-import { contactService } from '../services/contact.service.js';
-import { io } from '../index.js';
-import { sanitizeMessage } from '../utils/sanitize.js';
+import { env } from '../config/env.js';
+import { handleInbound, type Inbound } from '../engine/brain.js';
+import { fetchLineProfile } from '../channels/line.js';
+import { decrypt, isEncrypted } from '../utils/crypto.js';
 import { logger } from '../utils/logger.js';
 
-interface MessageAttachment {
-  type: string; // 'image', 'video', 'audio', 'file', 'story_mention', 'story_reply'
-  payload: {
-    url?: string;
-  };
+export type RawRequest = Request & { rawBody?: Buffer };
+
+const safeEqual = (a: string, b: string) => {
+  const x = Buffer.from(a), y = Buffer.from(b);
+  return x.length === y.length && crypto.timingSafeEqual(x, y);
+};
+
+/** Meta: X-Hub-Signature-256 = "sha256=" + hex HMAC-SHA256(raw body, app secret). */
+export function verifyMetaSignature(raw: Buffer | undefined, header: string | undefined, secret: string) {
+  if (!raw || !header) return false;
+  return safeEqual(header, 'sha256=' + crypto.createHmac('sha256', secret).update(raw).digest('hex'));
 }
 
-interface MessagingEvent {
+/** LINE: x-line-signature = base64 HMAC-SHA256(raw body, channel secret). */
+export function verifyLineSignature(raw: Buffer | undefined, header: string | undefined, secret: string) {
+  if (!raw || !header) return false;
+  return safeEqual(header, crypto.createHmac('sha256', secret).update(raw).digest('base64'));
+}
+
+const background = (label: string, work: () => Promise<void>) =>
+  work().catch((error) => logger.error(`${label} failed`, { error: error instanceof Error ? error.stack : error }));
+
+interface MetaEvent {
   sender: { id: string };
-  recipient: { id: string };
-  timestamp: number;
-  message?: {
-    mid: string;
-    text?: string;
-    quick_reply?: { payload: string };
-    attachments?: MessageAttachment[];
-    reply_to?: {
-      mid?: string;
-      story?: { url: string; id: string };
-    };
-  };
-  postback?: {
-    payload: string;
-    title: string;
-  };
+  message?: { mid: string; text?: string; is_echo?: boolean; quick_reply?: { payload: string }; attachments?: { type: string }[] };
+  postback?: { mid?: string; payload: string; title: string };
 }
 
-interface WebhookEntry {
-  id: string;
-  time: number;
-  messaging: MessagingEvent[];
-}
-
-interface WebhookBody {
-  object: string;
-  entry: WebhookEntry[];
+export function metaEventToInbound(event: MetaEvent, platform: 'facebook' | 'instagram'): Inbound | null {
+  if (event.message?.is_echo) return null;
+  if (event.postback) {
+    return { platform, senderId: event.sender.id, text: event.postback.title, payload: event.postback.payload, externalId: event.postback.mid };
+  }
+  const m = event.message;
+  if (!m) return null;
+  const text = m.text ?? (m.attachments?.length ? `[${m.attachments[0].type}]` : '');
+  if (!text) return null;
+  return { platform, senderId: event.sender.id, text, payload: m.quick_reply?.payload, externalId: m.mid };
 }
 
 export class WebhookController {
-  // Webhook verification (GET)
-  async verify(req: Request, res: Response, _next: NextFunction) {
-    const botId = req.params.botId as string;
-    const mode = req.query['hub.mode'];
-    const token = req.query['hub.verify_token'];
-    const challenge = req.query['hub.challenge'];
-
-    if (mode !== 'subscribe') {
-      return res.sendStatus(403);
-    }
-
-    // Get bot and verify token
-    const bot = await prisma.bot.findUnique({
-      where: { id: botId },
-    });
-
-    if (!bot) {
-      return res.sendStatus(404);
-    }
-
-    if (token !== bot.webhookVerifyToken) {
-      return res.sendStatus(403);
-    }
-
-    logger.info('Webhook verified', { botId, botName: bot.name });
-    res.status(200).send(challenge);
+  /** GET — Meta subscription handshake. */
+  async verifyFacebook(req: Request, res: Response) {
+    if (req.query['hub.mode'] !== 'subscribe') return res.sendStatus(403);
+    const bot = await prisma.bot.findUnique({ where: { id: req.params.botId as string } });
+    if (!bot || req.query['hub.verify_token'] !== bot.webhookVerifyToken) return res.sendStatus(403);
+    res.status(200).send(req.query['hub.challenge']);
   }
 
-  // Receive messages (POST)
-  async receive(req: Request, res: Response, _next: NextFunction) {
-    const botId = req.params.botId as string;
-    const body: WebhookBody = req.body;
-
-    // Accept both Facebook Messenger ('page') and Instagram DM ('instagram') events
-    if (body.object !== 'page' && body.object !== 'instagram') {
-      return res.sendStatus(404);
+  /** POST /webhooks/facebook/:botId — Messenger + Instagram. */
+  async receiveFacebook(req: RawRequest, res: Response) {
+    const secret = env.FACEBOOK_PAGES_APP_SECRET;
+    if (secret && !verifyMetaSignature(req.rawBody, req.get('x-hub-signature-256'), secret)) {
+      logger.warn('Facebook webhook: bad signature', { botId: req.params.botId });
+      return res.sendStatus(401);
     }
-
-    const platform = body.object === 'instagram' ? 'instagram' : 'facebook';
-
-    // Get the bot
-    const bot = await prisma.bot.findUnique({
-      where: { id: botId },
-    });
-
-    if (!bot || !bot.isActive) {
-      logger.warn('Bot not found or inactive', { botId });
-      return res.sendStatus(200); // Return 200 to prevent retrying
-    }
-
-    // Process each entry
-    for (const entry of body.entry) {
-      for (const event of entry.messaging) {
-        await this.handleMessagingEvent(bot.id, event, platform);
-      }
-    }
-
-    // Return 200 to acknowledge receipt
+    if (!secret && env.NODE_ENV === 'production') return res.sendStatus(503); // never run unsigned in production
     res.sendStatus(200);
-  }
 
-  private async handleMessagingEvent(botId: string, event: MessagingEvent, platform: string) {
-    const senderId = event.sender.id;
-
-    // Get the bot
-    const bot = await prisma.bot.findUnique({
-      where: { id: botId },
+    const body = req.body as { object?: string; entry?: { messaging?: MetaEvent[] }[] };
+    if (body.object !== 'page' && body.object !== 'instagram') return;
+    const platform = body.object === 'instagram' ? 'instagram' : 'facebook';
+    background('facebook webhook', async () => {
+      const bot = await prisma.bot.findUnique({ where: { id: req.params.botId as string } });
+      if (!bot?.isActive) return;
+      for (const entry of body.entry ?? []) {
+        for (const event of entry.messaging ?? []) { // `feed` (comment) entries have no messaging array
+          const inbound = metaEventToInbound(event, platform);
+          if (inbound) await handleInbound(bot, inbound);
+        }
+      }
     });
-
-    if (!bot) return;
-
-    let messageText = '';
-    let messageType = 'text';
-
-    // Handle story mention (Instagram only)
-    if (event.message?.attachments?.some(a => a.type === 'story_mention')) {
-      const storyAttachment = event.message.attachments.find(a => a.type === 'story_mention')!;
-      messageText = '[story_mention]';
-      messageType = 'story_mention';
-      logger.info('Received Instagram story mention', {
-        botId, senderId, storyUrl: storyAttachment.payload?.url,
-      });
-    }
-    // Handle story reply (user replies to a story via DM)
-    else if (event.message?.reply_to?.story) {
-      messageText = event.message.text ? sanitizeMessage(event.message.text) : '[story_reply]';
-      messageType = 'story_reply';
-      logger.info('Received Instagram story reply', {
-        botId, senderId, storyUrl: event.message.reply_to.story.url,
-      });
-    }
-    // Handle text message - sanitize to prevent XSS
-    else if (event.message?.text) {
-      messageText = sanitizeMessage(event.message.text);
-    }
-    // Handle quick reply - sanitize payload
-    else if (event.message?.quick_reply) {
-      messageText = sanitizeMessage(event.message.quick_reply.payload);
-    }
-    // Handle postback - sanitize payload
-    else if (event.postback) {
-      messageText = sanitizeMessage(event.postback.payload);
-    }
-
-    if (messageText) {
-      logger.debug('Webhook received message', { botId, senderId, platform, messageText });
-
-      // Ensure contact exists BEFORE creating conversation (fixes first-message bug)
-      await contactService.upsertContact(botId, senderId, undefined, undefined, platform);
-
-      // Log the incoming message to database
-      await prisma.message.create({
-        data: {
-          botId,
-          senderId,
-          content: messageText,
-          direction: 'incoming',
-          messageType,
-        },
-      });
-
-      // Notify conversation service about new message and get conversation info
-      const conversationInfo = await conversationService.onNewMessage(botId, senderId, messageText);
-
-      // Emit socket event for new message
-      io.to(`bot:${botId}`).emit('message:new', {
-        botId,
-        senderId,
-        platform,
-        content: messageText,
-        messageType,
-        direction: 'incoming',
-        conversationId: conversationInfo?.conversationId,
-        contactId: conversationInfo?.contactId,
-        timestamp: new Date().toISOString(),
-      });
-
-      // Emit to specific conversation room if exists
-      if (conversationInfo?.conversationId) {
-        io.to(`conversation:${conversationInfo.conversationId}`).emit('message:new', {
-          botId,
-          senderId,
-          platform,
-          content: messageText,
-          messageType,
-          direction: 'incoming',
-          conversationId: conversationInfo.conversationId,
-          contactId: conversationInfo.contactId,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      // Check if conversation is in human takeover mode
-      const isHumanTakeover = await conversationService.isHumanTakeover(botId, senderId);
-
-      if (isHumanTakeover) {
-        logger.debug('Conversation in human takeover mode, skipping bot response', { botId, senderId });
-        return;
-      }
-
-      // Execute bot flow (works for both Facebook and Instagram)
-      const result = await flowExecutorService.executeFlow(bot, senderId, messageText, platform);
-
-      if (!result.success) {
-        logger.error('Flow execution failed', { botId, platform, error: result.error });
-      } else {
-        logger.debug('Flow executed successfully', { botId, platform });
-      }
-    }
   }
+
+  /** POST /webhooks/line/:botId */
+  async receiveLine(req: RawRequest, res: Response) {
+    const bot = await prisma.bot.findUnique({ where: { id: req.params.botId as string } });
+    if (!bot?.lineChannelSecret) return res.sendStatus(404);
+    const secret = isEncrypted(bot.lineChannelSecret) ? decrypt(bot.lineChannelSecret) : bot.lineChannelSecret;
+    if (!verifyLineSignature(req.rawBody, req.get('x-line-signature'), secret)) {
+      logger.warn('LINE webhook: bad signature', { botId: bot.id });
+      return res.sendStatus(401);
+    }
+    res.sendStatus(200); // LINE's "Verify" button sends an empty events array — 200 is all it needs
+
+    const events = (req.body?.events ?? []) as LineEvent[];
+    background('line webhook', async () => {
+      if (!bot.isActive) return;
+      for (const event of events) {
+        const inbound = lineEventToInbound(event);
+        if (!inbound) continue;
+        await handleInbound(bot, { ...inbound, ...(await lineName(bot, inbound.senderId)) });
+      }
+    });
+  }
+}
+
+interface LineEvent {
+  type: string;
+  replyToken?: string;
+  webhookEventId?: string;
+  source?: { type: string; userId?: string };
+  message?: { id: string; type: string; text?: string };
+  postback?: { data: string };
+}
+
+export function lineEventToInbound(e: LineEvent): Inbound | null {
+  const senderId = e.source?.userId;
+  if (!senderId || e.source?.type !== 'user') return null; // 1:1 chats only
+  const base = { platform: 'line' as const, senderId, replyToken: e.replyToken, externalId: e.webhookEventId };
+  if (e.type === 'message' && e.message) {
+    const text = e.message.type === 'text' ? e.message.text ?? '' : `[${e.message.type}]`;
+    return { ...base, text };
+  }
+  if (e.type === 'postback' && e.postback) return { ...base, text: '', payload: e.postback.data };
+  if (e.type === 'follow') return { ...base, text: '[เพิ่มเพื่อน]' };
+  return null;
+}
+
+const nameCache = new Map<string, { name?: string; profilePic?: string }>();
+async function lineName(bot: Bot, userId: string) {
+  const key = `${bot.id}:${userId}`;
+  if (!nameCache.has(key)) {
+    const p = await fetchLineProfile(bot, userId).catch(() => ({} as { displayName?: string; pictureUrl?: string }));
+    nameCache.set(key, { name: p.displayName, profilePic: p.pictureUrl });
+  }
+  return nameCache.get(key)!;
 }
 
 export const webhookController = new WebhookController();

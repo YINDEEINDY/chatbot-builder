@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { webhookController } from '../controllers/webhook.controller.js';
+import { widgetController } from '../controllers/widget.controller.js';
 
-const router = Router();
+export const webhookRoutes = Router();
+webhookRoutes.get('/facebook/:botId', webhookController.verifyFacebook.bind(webhookController));
+webhookRoutes.post('/facebook/:botId', webhookController.receiveFacebook.bind(webhookController));
+webhookRoutes.post('/line/:botId', webhookController.receiveLine.bind(webhookController));
 
-// Facebook webhook verification
-router.get('/:botId', webhookController.verify.bind(webhookController));
-
-// Facebook webhook receive messages
-router.post('/:botId', webhookController.receive.bind(webhookController));
-
-export default router;
+export const widgetRoutes = Router();
+widgetRoutes.get('/:botId/config', widgetController.config.bind(widgetController));
+widgetRoutes.post('/:botId/session', widgetController.session.bind(widgetController));
+widgetRoutes.post('/:botId/messages', widgetController.send.bind(widgetController));

@@ -33,6 +33,13 @@ export const updateBotSchema = z.object({
     name: z.string().min(1, 'Bot name is required').max(100, 'Bot name too long').optional(),
     description: z.string().max(500, 'Description too long').optional(),
     isActive: z.boolean().optional(),
+    welcomeFlowId: z.string().uuid().nullable().optional(),
+    fallbackText: z.string().max(2000).nullable().optional(),
+    handoffOnFallback: z.boolean().optional(),
+    widgetColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+    widgetGreeting: z.string().max(300).nullable().optional(),
+    lineChannelSecret: z.string().max(200).nullable().optional(),
+    lineChannelToken: z.string().max(500).nullable().optional(),
   }),
 });
 

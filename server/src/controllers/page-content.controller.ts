@@ -1,3 +1,4 @@
+import { prisma } from '../config/db.js';
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middlewares/auth.js';
 import { botService } from '../services/bot.service.js';
@@ -9,7 +10,8 @@ export class PageContentController {
     const botId = req.params.botId as string;
     const userId = req.userId!;
 
-    const bot = await botService.getBot(botId, userId);
+    await botService.getBot(botId, userId); // ownership
+    const bot = (await prisma.bot.findUnique({ where: { id: botId } }))!;
     const token = botService.getDecryptedToken(bot.facebookToken);
 
     if (!bot.facebookPageId || !token) {

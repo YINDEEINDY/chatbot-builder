@@ -36,6 +36,13 @@ model Bot {
   igUserId           String?        // Instagram Business Account ID
   igUsername         String?        // Instagram username
   webhookVerifyToken String         @default(uuid())
+  lineChannelSecret  String?        // encrypted
+  lineChannelToken   String?        // encrypted
+  welcomeFlowId      String?        // flow ที่เริ่มเมื่อลูกค้าทักครั้งแรก
+  fallbackText       String?        // ตอบเมื่อไม่ตรงกฎใด
+  handoffOnFallback  Boolean        @default(true)  // ไม่ตรงกฎ → ส่งเข้าคิวให้คนตอบ
+  widgetColor        String         @default("#0f766e")
+  widgetGreeting     String?
   isActive           Boolean        @default(false)
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
@@ -47,6 +54,8 @@ model Bot {
   contacts           Contact[]
   broadcasts         Broadcast[]
   conversations      Conversation[]
+  cannedResponses    CannedResponse[]
+  autoReplyRules     AutoReplyRule[]
 }
 
 model Flow {
@@ -56,7 +65,7 @@ model Flow {
   bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
   nodes     String   @default("[]") @db.Text
   edges     String   @default("[]") @db.Text
-  triggers  String   @default("[]") @db.Text // Keywords/phrases that trigger this flow
+  triggers  String   @default("[]") @db.Text // deprecated: keywords live in AutoReplyRule
   isDefault Boolean  @default(false)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
@@ -68,9 +77,11 @@ model UserSession {
   botId          String
   bot            Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
   senderId       String
-  currentNodeId  String?  // For Flow-based execution
-  currentBlockId String?  // For Block-based execution
-  currentCardIdx Int      @default(0) // Current card index within the block
+  flowId         String?
+  currentNodeId  String?  // node ที่รอคำตอบอยู่ (null = ไม่ได้อยู่ใน flow)
+  retries        Int      @default(0)
+  currentBlockId String?  // deprecated (Block engine removed)
+  currentCardIdx Int      @default(0) // deprecated
   context        String   @default("{}") @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -84,9 +95,15 @@ model Message {
   bot         Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
   senderId    String
   content     String
-  direction   String
+  direction   String   // incoming | outgoing
   messageType String
+  sender      String   @default("contact") // contact | bot | agent | system
+  agentId     String?
+  meta        String?  @db.Text // JSON {buttons:[{label,payload}], imageUrl}
+  externalId  String?  @unique  // id จากแพลตฟอร์ม กันประมวลผลซ้ำเมื่อถูกส่งซ้ำ
   createdAt   DateTime @default(now())
+
+  @@index([botId, senderId, createdAt])
 }
 
 model Analytics {
@@ -102,6 +119,7 @@ model Analytics {
   @@unique([botId, date])
 }
 
+// Block - deprecated: engine removed in revamp. Model kept so `db push` never drops live data.
 // Block - Chatfuel-style conversation blocks (like pages/screens)
 model Block {
   id              String   @id @default(uuid())
@@ -130,6 +148,7 @@ model Contact {
   lastSeenAt           DateTime               @default(now())
   messageCount         Int                    @default(0)
   tags                 String                 @default("[]") @db.Text // JSON array of tags
+  attributes           String                 @default("{}") @db.Text // JSON ข้อมูลที่เก็บจากแบบสอบถาม
   isSubscribed         Boolean                @default(true)
   createdAt            DateTime               @default(now())
   updatedAt            DateTime               @updatedAt
@@ -180,8 +199,9 @@ model Conversation {
   bot             Bot       @relation(fields: [botId], references: [id], onDelete: Cascade)
   contactId       String    @unique
   contact         Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
-  status          String    @default("bot") // bot, human, closed
+  status          String    @default("bot") // bot | pending (รอคน) | open (มีคนรับ) | resolved
   assignedTo      String?   // User ID of assigned agent
+  waitingSince    DateTime?
   unreadCount     Int       @default(0)
   lastMessageAt   DateTime  @default(now())
   humanTakeoverAt DateTime?
@@ -189,4 +209,35 @@ model Conversation {
   updatedAt       DateTime  @updatedAt
 
   @@unique([botId, contactId])
+}
+
+// คำตอบสำเร็จรูป — แอดมินพิมพ์ "/" ในช่องตอบเพื่อเลือก
+model CannedResponse {
+  id        String   @id @default(uuid())
+  botId     String
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  shortcut  String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([botId, shortcut])
+}
+
+// กฎตอบอัตโนมัติ — เจอคำ → ตอบข้อความ และ/หรือ เริ่ม flow
+model AutoReplyRule {
+  id        String   @id @default(uuid())
+  botId     String
+  bot       Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  name      String
+  keywords  String   @default("[]") @db.Text // JSON string[]
+  matchType String   @default("contains") // contains | exact
+  replyText String?  @db.Text
+  flowId    String?
+  priority  Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([botId])
 }

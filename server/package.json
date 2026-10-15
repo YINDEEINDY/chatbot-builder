@@ -10,7 +10,9 @@
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "tsx prisma/seed.ts"
+    "test": "node --import tsx --test --test-concurrency=1 \"src/**/*.test.ts\"",
+    "db:local": "node scripts/dev-db.mjs",
+    "db:local:stop": "node scripts/dev-db.mjs stop"
   },
   "dependencies": {
     "@prisma/client": "^6.2.1",
@@ -44,6 +46,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "embedded-postgres": "^17.5.0-beta.15",
     "tsx": "^4.19.2"
   }
 }

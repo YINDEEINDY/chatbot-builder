@@ -7,6 +7,8 @@ export const apiLimiter = rateLimit({
   message: { success: false, message: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  // webhooks and the public widget have their own limiters
+  skip: (req) => req.originalUrl.startsWith('/api/webhooks') || req.originalUrl.startsWith('/api/widget'),
 });
 
 // Strict limit for auth endpoints (login/register)
@@ -22,4 +24,11 @@ export const webhookLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 1000, // Facebook sends many webhook requests
   message: 'Too many webhook requests',
+});
+
+// Public chat widget: per visitor IP
+export const widgetLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { success: false, message: 'Too many messages, slow down' },
 });

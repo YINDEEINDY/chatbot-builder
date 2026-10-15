@@ -7,9 +7,11 @@ export class ConversationController {
     try {
       const botId = req.params.botId as string;
       const userId = req.userId!;
-      const status = req.query.status as string | undefined;
-
-      const conversations = await conversationService.listConversations(botId, userId, status);
+      const conversations = await conversationService.listConversations(botId, userId, {
+        status: req.query.status as string | undefined,
+        assignee: req.query.assignee as 'mine' | 'unassigned' | 'all' | undefined,
+        search: req.query.search as string | undefined,
+      });
 
       res.json({
         success: true,
